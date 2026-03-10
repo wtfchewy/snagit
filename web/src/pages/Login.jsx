@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function Login() {
@@ -27,6 +28,12 @@ export default function Login() {
           </svg>
           Continue with Google
         </button>
+
+        <p className="text-center mt-4">
+          <Link to="/privacy" className="text-[11px] text-copy-lighter hover:text-copy-light transition-colors no-underline">
+            Privacy Policy
+          </Link>
+        </p>
       </div>
     </div>
   )

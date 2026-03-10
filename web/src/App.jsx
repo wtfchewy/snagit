@@ -3,6 +3,7 @@ import { useAuth } from './contexts/AuthContext'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import ExtensionAuth from './pages/ExtensionAuth'
+import Privacy from './pages/Privacy'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -32,6 +33,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
       <Route path="/extension-auth" element={<ExtensionAuth />} />
+      <Route path="/privacy" element={<Privacy />} />
       <Route
         path="*"
         element={
