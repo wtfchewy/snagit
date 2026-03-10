@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Trash2, ExternalLink, GripVertical, MousePointerClick, PackagePlus, Chrome } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
-import { getAllComponents, getPacks, deleteComponent } from '../store'
+import { getAllComponents, getPacks, deleteComponent, updateComponentPosition } from '../store'
 import ComponentPreview from '../components/ComponentPreview'
 
 const GAP = 32
@@ -93,8 +93,16 @@ export default function Canvas({ filterPack, filterSite }) {
 
   // Merge base with overrides
   const resolvedPositions = basePositions.map((pos) => {
+    // Current drag overrides
     const override = cardPositions[pos.id]
     if (override) return { ...pos, x: override.x, y: override.y }
+
+    // Firebase saved position
+    const comp = filtered.find(c => c.id === pos.id)
+    if (comp && comp.x !== undefined && comp.y !== undefined) {
+      return { ...pos, x: comp.x, y: comp.y }
+    }
+
     return pos
   })
 
@@ -126,8 +134,15 @@ export default function Canvas({ filterPack, filterSite }) {
 
   const onPointerUp = useCallback(() => {
     setPanning(false)
+    if (dragId) {
+      const finalPos = cardPositions[dragId]
+      if (finalPos) {
+        updateComponentPosition(user.uid, dragId, finalPos.x, finalPos.y)
+          .catch(err => console.error('Failed to save position:', err))
+      }
+    }
     setDragId(null)
-  }, [])
+  }, [dragId, cardPositions, user?.uid])
 
   // Card drag start
   const onCardDragStart = useCallback((e, compId, currentX, currentY) => {

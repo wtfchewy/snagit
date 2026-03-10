@@ -4,6 +4,7 @@ import {
   getDocs,
   getDoc,
   setDoc,
+  updateDoc,
   deleteDoc,
   query,
   where,
@@ -75,4 +76,8 @@ export async function getAllComponents(uid) {
 
 export async function deleteComponent(uid, id) {
   await deleteDoc(doc(db, 'users', uid, 'components', id))
+}
+
+export async function updateComponentPosition(uid, id, x, y) {
+  await updateDoc(doc(db, 'users', uid, 'components', id), { x, y })
 }
