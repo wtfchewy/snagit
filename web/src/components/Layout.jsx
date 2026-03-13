@@ -58,18 +58,18 @@ export default function Layout() {
       <Canvas filterPack={filterPack} filterSite={filterSite} />
 
       {/* Top-left: Logo */}
-      <div className="fixed top-6 left-6 z-50">
-        <div className="flex items-center gap-2.5 bg-foreground/80 backdrop-blur-md px-4 py-2.5 rounded-xl border border-border shadow-lg shadow-black/20">
+      <div className="fixed top-6 left-6 z-50 pointer-events-none">
+        <div className="flex items-center gap-2.5 bg-foreground/80 backdrop-blur-md px-4 py-2.5 rounded-xl border border-border shadow-lg shadow-black/20 pointer-events-auto">
           <img src="/logo.svg" alt="" className="w-6 h-6" />
           <span className="text-lg font-bold tracking-tight font-display text-copy">Backpack</span>
         </div>
       </div>
 
       {/* Top-right: User dropdown */}
-      <div className="fixed top-6 right-6 z-50" ref={dropdownRef}>
+      <div className="fixed top-6 right-6 z-50 pointer-events-none" ref={dropdownRef}>
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer border border-border bg-foreground/80 backdrop-blur-md p-2 pr-3 rounded-xl shadow-lg shadow-black/20"
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer border border-border bg-foreground/80 backdrop-blur-md p-2 pr-3 rounded-xl shadow-lg shadow-black/20 pointer-events-auto"
         >
           {user?.photoURL ? (
             <img
@@ -90,7 +90,7 @@ export default function Layout() {
         </button>
 
         {isDropdownOpen && (
-          <div className="absolute right-0 mt-2 w-56 bg-foreground border border-border rounded-xl shadow-2xl shadow-black/40 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="absolute right-0 mt-2 w-56 bg-foreground border border-border rounded-xl shadow-2xl shadow-black/40 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 pointer-events-auto">
             <div className="px-4 py-3 bg-linear-to-b from-background/50 to-transparent flex items-center gap-3">
               {user?.photoURL ? (
                 <img
@@ -130,10 +130,10 @@ export default function Layout() {
       </div>
 
       {/* Bottom-right: Filter */}
-      <div className="fixed bottom-6 right-6 z-50" ref={filterRef}>
+      <div className="fixed bottom-6 right-6 z-50 pointer-events-none" ref={filterRef}>
         <button
           onClick={() => setShowFilter(!showFilter)}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border transition-all shadow-lg shadow-black/20 backdrop-blur-md ${hasActiveFilter
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border transition-all shadow-lg shadow-black/20 backdrop-blur-md pointer-events-auto ${hasActiveFilter
             ? 'bg-primary/90 text-primary-content border-primary/50'
             : 'bg-foreground/80 text-copy-light border-border hover:text-copy'
             }`}
@@ -157,7 +157,7 @@ export default function Layout() {
         </button>
 
         {showFilter && (
-          <div className="absolute bottom-full right-0 mb-2 w-60 bg-foreground border border-border rounded-xl shadow-2xl shadow-black/40 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150">
+          <div className="absolute bottom-full right-0 mb-2 w-60 bg-foreground border border-border rounded-xl shadow-2xl shadow-black/40 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150 pointer-events-auto">
             {/* Packs */}
             <div className="px-2 pt-3 pb-2">
               <div className="flex items-center gap-1.5 px-2 mb-2">

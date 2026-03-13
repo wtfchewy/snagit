@@ -46,16 +46,73 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Canvas */
-.canvas-bg {
-  user-select: none;
+/* Reset React Flow's default node styling for custom nodes */
+.react-flow__node-componentCard,
+.react-flow__node-text,
+.react-flow__node-stickyNote {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
-/* Dot grid background — used on all pages */
-.dot-grid {
-  background-image: radial-gradient(circle, var(--color-border) 1px, transparent 1px);
-  background-size: 32px 32px;
-  opacity: 0.5;
+.react-flow__node-text.selected,
+.react-flow__node-stickyNote.selected {
+  box-shadow: none;
+}
+
+/* Dark theme for React Flow controls — match overlay pill style */
+.react-flow__controls {
+  background: rgba(38, 38, 38, 0.8); /* foreground/80 */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -4px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  padding: 2px;
+  margin: 0;
+  bottom: 24px;
+  left: 24px;
+}
+
+.react-flow__controls button {
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  fill: var(--color-copy-lighter);
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s, fill 0.15s;
+}
+
+.react-flow__controls button:hover {
+  background-color: var(--color-background);
+  fill: var(--color-copy);
+}
+
+.react-flow__controls button svg {
+  max-width: 16px;
+  max-height: 16px;
+}
+
+/* Remove default separator lines between buttons */
+.react-flow__controls button + button {
+  border-top: none;
+}
+
+/* Tool cursors — override React Flow's default grab cursor on the pane */
+.canvas-tool-text .react-flow__pane,
+.canvas-tool-sticky .react-flow__pane {
+  cursor: cell !important;
+}
+.canvas-tool-draw .react-flow__pane {
+  cursor: crosshair !important;
 }
 
 /* Card delete — macOS poof-style */
