@@ -1037,21 +1037,128 @@ if (!window.__backpackInjected) {
     packDropdown.style.top = posTop + 'px';
     packDropdown.style.width = dropdownWidth + 'px';
 
-    // "All" option (no pack)
-    let html = `<div class="__backpack-dropdown-item" data-pack-id="">All</div>`;
-    for (const pack of packs) {
-      html += `<div class="__backpack-dropdown-item" data-pack-id="${pack.id}">${pack.name}</div>`;
+    // Header with toggle button
+    const header = document.createElement('div');
+    header.className = '__backpack-dropdown-header';
+    header.innerHTML = `<span>Packs</span><button class="__backpack-dropdown-new-btn">+ New</button>`;
+    packDropdown.appendChild(header);
+
+    const toggleBtn = header.querySelector('.__backpack-dropdown-new-btn');
+
+    // New pack form (hidden initially)
+    const form = document.createElement('div');
+    form.className = '__backpack-dropdown-new-form';
+    form.style.display = 'none';
+    form.innerHTML = `<input class="__backpack-dropdown-new-input" placeholder="Pack name..." /><button class="__backpack-dropdown-add-btn">Add</button>`;
+    packDropdown.appendChild(form);
+
+    function showForm() {
+      form.style.display = 'flex';
+      toggleBtn.textContent = '✕';
+      form.querySelector('.__backpack-dropdown-new-input').focus();
     }
-    packDropdown.innerHTML = html;
+
+    function hideForm() {
+      form.style.display = 'none';
+      toggleBtn.textContent = '+ New';
+      form.querySelector('.__backpack-dropdown-new-input').value = '';
+    }
+
+    // List container for slider
+    const list = document.createElement('div');
+    list.className = '__backpack-dropdown-list';
+
+    // Slider element
+    const slider = document.createElement('div');
+    slider.className = '__backpack-dropdown-slider';
+    list.appendChild(slider);
+
+    // Build items
+    function addItem(label, packId) {
+      const item = document.createElement('div');
+      item.className = '__backpack-dropdown-item';
+      item.dataset.packId = packId;
+      item.textContent = label;
+      list.appendChild(item);
+      return item;
+    }
+
+    addItem('All', '');
+    for (const pack of packs) {
+      addItem(pack.name, pack.id);
+    }
+
+    packDropdown.appendChild(list);
     document.body.appendChild(packDropdown);
 
-    // Handle pack selection
-    packDropdown.addEventListener('click', (e) => {
+    // Slider logic
+    function moveSlider(el) {
+      if (!el) { slider.style.opacity = '0'; return; }
+      const listRect = list.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      slider.style.top = (elRect.top - listRect.top) + 'px';
+      slider.style.height = elRect.height + 'px';
+      slider.style.opacity = '1';
+    }
+
+    // Show slider on first item by default
+    const items = list.querySelectorAll('.__backpack-dropdown-item');
+    requestAnimationFrame(() => moveSlider(items[0]));
+
+    items.forEach((item) => {
+      item.addEventListener('mouseenter', () => moveSlider(item));
+      item.addEventListener('mouseleave', () => moveSlider(items[0]));
+    });
+
+    // Toggle new pack form
+    toggleBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
+      if (form.style.display === 'none') {
+        showForm();
+      } else {
+        hideForm();
+      }
+    }, true);
+
+    // Create pack
+    function handleCreatePack() {
+      const input = form.querySelector('.__backpack-dropdown-new-input');
+      const name = input.value.trim();
+      if (!name) return;
+      const pack = { id: crypto.randomUUID(), name, description: '', createdAt: Date.now() };
+      chrome.runtime.sendMessage({ type: 'SAVE_PACK', pack }, () => {
+        if (chrome.runtime.lastError) { /* ignore */ }
+        // Add new item to list
+        const newItem = addItem(pack.name, pack.id);
+        newItem.addEventListener('mouseenter', () => moveSlider(newItem));
+        newItem.addEventListener('mouseleave', () => moveSlider(items[0]));
+        hideForm();
+      });
+    }
+
+    form.querySelector('.__backpack-dropdown-add-btn').addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      handleCreatePack();
+    }, true);
+
+    form.querySelector('.__backpack-dropdown-new-input').addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      if (e.key === 'Enter') { e.preventDefault(); handleCreatePack(); }
+      if (e.key === 'Escape') { e.preventDefault(); hideForm(); }
+    }, true);
+
+    // Handle pack selection (on list only, so header/form clicks aren't intercepted)
+    list.addEventListener('click', (e) => {
       const item = e.target.closest('.__backpack-dropdown-item');
       if (!item) return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
 
       const selectedPackId = item.dataset.packId || null;
       saveAndAnimate(selectedEl, selectedPackId);
