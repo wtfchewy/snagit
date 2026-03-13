@@ -78,6 +78,34 @@ function toFirestoreDoc(obj) {
     if (key === 'id') continue;
     fields[key] = toFirestoreValue(val);
   }
+
+  // Firestore REST API limit: 1MB per document. Guard against oversized payloads.
+  const MAX_SIZE = 900000; // ~900KB safety margin
+  let serialized = JSON.stringify(fields);
+
+  if (serialized.length > MAX_SIZE) {
+    // First: drop rawHtml (unstyled duplicate, least valuable)
+    if (fields.rawHtml) {
+      delete fields.rawHtml;
+      serialized = JSON.stringify(fields);
+    }
+  }
+
+  if (serialized.length > MAX_SIZE) {
+    // Second: truncate the html field's embedded <style> block
+    if (fields.html && fields.html.stringValue) {
+      const html = fields.html.stringValue;
+      const styleStart = html.indexOf('<style>');
+      const styleEnd = html.indexOf('</style>');
+      if (styleStart !== -1 && styleEnd !== -1) {
+        const excess = serialized.length - MAX_SIZE;
+        const styleContent = html.substring(styleStart + 7, styleEnd);
+        const truncated = styleContent.substring(0, Math.max(0, styleContent.length - excess - 200));
+        fields.html = { stringValue: html.substring(0, styleStart + 7) + truncated + html.substring(styleEnd) };
+      }
+    }
+  }
+
   return { fields };
 }
 

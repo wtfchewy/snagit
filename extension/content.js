@@ -211,22 +211,33 @@ if (!window.__backpackInjected) {
 
     while (walker) {
       const computed = window.getComputedStyle(walker);
-
-      // Check background-color first — most reliable
       const bgColor = computed.backgroundColor;
-      if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
-        // Also check if there's a solid gradient on top
-        const bgImage = computed.backgroundImage;
-        if (bgImage && bgImage !== 'none' && isSolidBackground(bgImage)) {
-          return resolveURLsInCSS(bgImage);
-        }
-        return bgColor;
-      }
-
-      // Check for solid background-image (actual images, not fade-to-transparent gradients)
       const bgImage = computed.backgroundImage;
-      if (bgImage && bgImage !== 'none' && isSolidBackground(bgImage)) {
-        return resolveURLsInCSS(bgImage);
+      const hasBgColor = bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent';
+      const hasBgImage = bgImage && bgImage !== 'none';
+      const backdropFilter = computed.getPropertyValue('backdrop-filter') || computed.getPropertyValue('-webkit-backdrop-filter');
+      const hasBackdrop = backdropFilter && backdropFilter !== 'none';
+
+      if (hasBgColor || hasBgImage || hasBackdrop) {
+        // Only reject gradients that are purely transparent fades
+        const isUsableBgImage = hasBgImage && isSolidBackground(bgImage);
+
+        // Return structured background object with all properties
+        if (isUsableBgImage || hasBgColor || hasBackdrop) {
+          const bg = {};
+          if (hasBgColor) bg.backgroundColor = bgColor;
+          if (isUsableBgImage) {
+            bg.backgroundImage = resolveURLsInCSS(bgImage);
+            bg.backgroundSize = computed.backgroundSize;
+            bg.backgroundPosition = computed.backgroundPosition;
+            bg.backgroundRepeat = computed.backgroundRepeat;
+          }
+          if (hasBackdrop) bg.backdropFilter = backdropFilter;
+
+          // For simple solid color, return string for backward compat
+          if (hasBgColor && !isUsableBgImage && !hasBackdrop) return bgColor;
+          return bg;
+        }
       }
 
       walker = walker.parentElement;
@@ -260,76 +271,214 @@ if (!window.__backpackInjected) {
       .trim();
   }
 
-  // Inline computed styles onto a cloned element tree as a fallback
-  // when CSS rule extraction fails to capture meaningful styles
-  function inlineComputedStyles(clone, liveEl) {
-    const PROPS = [
-      'display', 'flex-direction', 'align-items', 'justify-content', 'gap',
-      'flex', 'flex-grow', 'flex-shrink', 'flex-basis', 'flex-wrap',
-      'grid-template-columns', 'grid-template-rows', 'grid-column', 'grid-row',
-      'width', 'height', 'min-width', 'min-height', 'max-width', 'max-height',
-      'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
-      'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
-      'background', 'background-color', 'background-image',
-      'color', 'font-family', 'font-size', 'font-weight', 'font-style',
-      'text-align', 'text-decoration', 'text-transform', 'line-height', 'letter-spacing',
-      'white-space', 'word-break', 'overflow', 'overflow-x', 'overflow-y',
-      'border', 'border-radius', 'border-top', 'border-right', 'border-bottom', 'border-left',
-      'box-shadow', 'opacity', 'z-index', 'position',
-      'top', 'right', 'bottom', 'left',
-      'transform', 'transition',
-      'cursor', 'pointer-events', 'list-style', 'vertical-align',
-      'object-fit', 'aspect-ratio', 'isolation',
-    ];
-    const DEFAULTS = {
-      'display': 'block', 'flex-direction': 'row', 'align-items': 'normal',
-      'justify-content': 'normal', 'gap': 'normal', 'flex': '0 1 auto',
-      'flex-grow': '0', 'flex-shrink': '1', 'flex-basis': 'auto', 'flex-wrap': 'nowrap',
-      'width': 'auto', 'height': 'auto', 'min-width': 'auto', 'min-height': 'auto',
-      'max-width': 'none', 'max-height': 'none',
-      'padding': '0px', 'margin': '0px',
-      'background-color': 'rgba(0, 0, 0, 0)', 'background-image': 'none',
-      'color': 'rgb(0, 0, 0)',
-      'font-weight': '400', 'font-style': 'normal',
-      'text-align': 'start', 'text-decoration': 'none solid rgb(0, 0, 0)',
-      'text-transform': 'none', 'line-height': 'normal', 'letter-spacing': 'normal',
-      'white-space': 'normal', 'word-break': 'normal',
-      'overflow': 'visible', 'overflow-x': 'visible', 'overflow-y': 'visible',
-      'border-radius': '0px', 'box-shadow': 'none', 'opacity': '1',
-      'z-index': 'auto', 'position': 'static',
-      'top': 'auto', 'right': 'auto', 'bottom': 'auto', 'left': 'auto',
-      'transform': 'none', 'transition': 'all 0s ease 0s',
-      'cursor': 'auto', 'pointer-events': 'auto', 'list-style': 'outside none disc',
-      'vertical-align': 'baseline', 'object-fit': 'fill', 'isolation': 'auto',
-    };
+  // ─── Default Value Cache ──────────────────────────────────────────
+  // Cache per-tag default computed styles so we only inline properties
+  // that differ from the browser default. Cuts inline style size ~70-80%.
+  const _defaultCache = {};
+  function getDefaults(tagName) {
+    if (_defaultCache[tagName]) return _defaultCache[tagName];
+    const temp = document.createElement(tagName);
+    document.body.appendChild(temp);
+    const computed = window.getComputedStyle(temp);
+    const defaults = {};
+    for (const prop of computed) {
+      defaults[prop] = computed.getPropertyValue(prop);
+    }
+    temp.remove();
+    _defaultCache[tagName] = defaults;
+    return defaults;
+  }
 
+  // Skip shorthand properties that overlap with longhands the browser already enumerates
+  const SKIP_SHORTHANDS = new Set([
+    'animation', 'background', 'border', 'border-top', 'border-right', 'border-bottom', 'border-left',
+    'border-block-end', 'border-block-start', 'border-inline-end', 'border-inline-start',
+    'border-color', 'border-style', 'border-width', 'border-radius',
+    'column-rule', 'columns', 'flex', 'flex-flow', 'font', 'font-variant',
+    'gap', 'grid', 'grid-area', 'grid-column', 'grid-row', 'grid-template',
+    'inset', 'list-style', 'margin', 'mask', 'offset', 'outline',
+    'overflow', 'padding', 'place-content', 'place-items', 'place-self',
+    'scroll-margin', 'scroll-padding', 'text-decoration', 'text-emphasis',
+    'transition', 'container',
+  ]);
+
+  // Comprehensive computed style inlining — always run on every capture.
+  // Iterates ALL computed properties and only inlines those differing from tag defaults.
+  function inlineComputedStyles(clone, liveEl) {
     const liveElements = [liveEl, ...liveEl.querySelectorAll('*')];
     const cloneElements = [clone, ...clone.querySelectorAll('*')];
 
     for (let i = 0; i < liveElements.length && i < cloneElements.length; i++) {
-      const computed = window.getComputedStyle(liveElements[i]);
+      const el = liveElements[i];
+      const tag = el.tagName.toLowerCase();
+      const defaults = getDefaults(tag);
+      const computed = window.getComputedStyle(el);
       const parts = [];
-      for (const prop of PROPS) {
+
+      for (const prop of computed) {
+        // Skip shorthands — longhands are already enumerated
+        if (SKIP_SHORTHANDS.has(prop)) continue;
+        // Skip properties that are almost never part of component design
+        // (and may leak from picker/devtools highlights)
+        if (prop === 'outline' || prop === 'outline-offset' || prop === 'cursor' ||
+            prop.startsWith('outline-')) continue;
+        // Skip webkit/moz prefixed properties unless visually significant
+        if (prop.startsWith('-webkit-') || prop.startsWith('-moz-')) {
+          if (!prop.includes('filter') && !prop.includes('clip') && !prop.includes('mask') &&
+              !prop.includes('text-fill') && !prop.includes('text-stroke') &&
+              !prop.includes('font-smoothing') && !prop.includes('backdrop')) continue;
+        }
         const val = computed.getPropertyValue(prop);
         if (!val) continue;
-        // Skip defaults to keep output compact
-        const def = DEFAULTS[prop];
-        if (def && val === def) continue;
-        // Skip shorthand padding/margin if all sides are 0px
-        if ((prop === 'padding' || prop === 'margin') && val === '0px') continue;
-        // Skip border if none
-        if (prop === 'border' && (val === '' || val.includes('none'))) continue;
-        if (prop === 'background' && val.includes('rgba(0, 0, 0, 0)') && !val.includes('url') && !val.includes('gradient')) continue;
+        // Skip if matches tag default
+        if (defaults[prop] && val === defaults[prop]) continue;
         parts.push(`${prop}: ${val}`);
       }
+
       if (parts.length > 0) {
-        const existing = cloneElements[i].getAttribute('style') || '';
-        cloneElements[i].setAttribute('style', parts.join('; ') + '; ' + existing);
+        cloneElements[i].setAttribute('style', parts.join('; '));
       }
     }
   }
 
-  function extractMatchingCSS(el) {
+  // ─── Pseudo-Element Capture ────────────────────────────────────────
+  // Captures ::before and ::after computed styles as CSS rules using data-bp attributes.
+  function capturePseudoElements(clone, liveEl) {
+    const liveElements = [liveEl, ...liveEl.querySelectorAll('*')];
+    const cloneElements = [clone, ...clone.querySelectorAll('*')];
+    const pseudoRules = [];
+    let bpIndex = 0;
+
+    for (let i = 0; i < liveElements.length && i < cloneElements.length; i++) {
+      const el = liveElements[i];
+      for (const pseudo of ['::before', '::after']) {
+        const pc = window.getComputedStyle(el, pseudo);
+        const content = pc.getPropertyValue('content');
+        if (!content || content === 'none' || content === 'normal') continue;
+
+        const tag = el.tagName.toLowerCase();
+        const defaults = getDefaults(tag);
+        const parts = [`content: ${content}`];
+
+        for (const prop of pc) {
+          if (prop === 'content') continue;
+          if (SKIP_SHORTHANDS.has(prop)) continue;
+          if (prop.startsWith('-webkit-') || prop.startsWith('-moz-')) {
+            if (!prop.includes('filter') && !prop.includes('clip') && !prop.includes('mask') &&
+                !prop.includes('text-fill') && !prop.includes('text-stroke') &&
+                !prop.includes('font-smoothing') && !prop.includes('backdrop')) continue;
+          }
+          const val = pc.getPropertyValue(prop);
+          if (!val) continue;
+          if (defaults[prop] && val === defaults[prop]) continue;
+          parts.push(`${prop}: ${val}`);
+        }
+
+        const attr = `bp-${bpIndex++}`;
+        cloneElements[i].setAttribute('data-bp', attr);
+        pseudoRules.push(`[data-bp="${attr}"]${pseudo} { ${parts.join('; ')} }`);
+      }
+    }
+
+    return pseudoRules;
+  }
+
+  // ─── Inherited Style Capture ───────────────────────────────────────
+  // The component root inherits styles from html/body that won't be present in isolation.
+  function captureInheritedStyles(liveEl) {
+    const INHERITED_PROPS = [
+      'font-family', 'font-size', 'color', 'line-height', 'letter-spacing',
+      'word-spacing', 'text-align', 'direction', 'writing-mode',
+      '-webkit-font-smoothing', '-moz-osx-font-smoothing',
+      'font-feature-settings', 'font-kerning', 'text-rendering',
+      '-webkit-text-size-adjust',
+    ];
+    const computed = window.getComputedStyle(liveEl);
+    const parts = [];
+    for (const prop of INHERITED_PROPS) {
+      const val = computed.getPropertyValue(prop);
+      if (val) parts.push(`${prop}: ${val}`);
+    }
+    return parts.length > 0 ? `body { ${parts.join('; ')} }` : '';
+  }
+
+  // ─── Media Query Helpers ─────────────────────────────────────────
+  function isViewportMediaQuery(conditionText) {
+    return /\b(min-|max-)?(width|height|device-width|device-height|orientation|aspect-ratio)\b/i.test(conditionText);
+  }
+
+  // ─── Asset Inlining Helpers ────────────────────────────────────────
+  async function fetchAsDataURI(url, mimePrefix) {
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) return null;
+      const buf = await resp.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      const b64 = btoa(binary);
+      const ext = url.split('?')[0].split('.').pop().toLowerCase();
+      const mimeMap = { woff2: 'font/woff2', woff: 'font/woff', ttf: 'font/ttf', otf: 'font/otf',
+        png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif',
+        svg: 'image/svg+xml', webp: 'image/webp', avif: 'image/avif', ico: 'image/x-icon' };
+      const mime = mimePrefix || mimeMap[ext] || 'application/octet-stream';
+      return `data:${mime};base64,${b64}`;
+    } catch { return null; }
+  }
+
+  async function inlineFontURLs(css) {
+    const fontUrlRe = /url\(\s*['"]?([^'")]+\.(?:woff2?|ttf|otf)(?:\?[^'")]*)?)\s*['"]?\s*\)/gi;
+    const matches = [...css.matchAll(fontUrlRe)];
+    for (const m of matches) {
+      const url = m[1];
+      if (url.startsWith('data:')) continue;
+      const dataURI = await fetchAsDataURI(url);
+      if (dataURI) {
+        css = css.split(m[0]).join(`url("${dataURI}")`);
+      }
+    }
+    return css;
+  }
+
+  async function inlineCSSImageURLs(css) {
+    const imgUrlRe = /url\(\s*['"]?([^'")]+\.(?:png|jpe?g|gif|svg|webp|avif)(?:\?[^'")]*)?)\s*['"]?\s*\)/gi;
+    const matches = [...css.matchAll(imgUrlRe)];
+    for (const m of matches) {
+      const url = m[1];
+      if (url.startsWith('data:')) continue;
+      // Skip very large images (> 500KB) — check via HEAD
+      try {
+        const head = await fetch(url, { method: 'HEAD' });
+        const len = parseInt(head.headers.get('content-length') || '0', 10);
+        if (len > 500000) continue;
+      } catch { /* proceed anyway */ }
+      const dataURI = await fetchAsDataURI(url);
+      if (dataURI) {
+        css = css.split(m[0]).join(`url("${dataURI}")`);
+      }
+    }
+    return css;
+  }
+
+  async function inlineCSSImports(css) {
+    const importRe = /@import\s+url\(\s*["']?([^"')]+)["']?\s*\)\s*;?/g;
+    const matches = [...css.matchAll(importRe)];
+    for (const m of matches) {
+      const url = m[1];
+      try {
+        const resp = await fetch(url);
+        if (resp.ok) {
+          let importedCSS = await resp.text();
+          // Recursively resolve @imports within
+          importedCSS = await inlineCSSImports(importedCSS);
+          css = css.replace(m[0], importedCSS);
+        }
+      } catch { /* leave as-is */ }
+    }
+    return css;
+  }
+
+  async function extractMatchingCSS(el) {
     const elements = collectElements(el);
     const matchedRules = [];
     const fontFaceRules = [];
@@ -337,14 +486,7 @@ if (!window.__backpackInjected) {
     const cssVars = new Set();
     const usedFontFamilies = new Set();
 
-    // Debug counters
-    let _dbgStyleRules = 0;
-    let _dbgTestedSelectors = 0;
-    let _dbgMatchedSelectors = 0;
-    let _dbgErrors = 0;
     let _dbgSheetErrors = 0;
-    const _dbgRuleTypes = {};
-    const _dbgSampleSelectors = [];
 
     for (const element of elements) {
       const ff = window.getComputedStyle(element).getPropertyValue('font-family');
@@ -354,96 +496,130 @@ if (!window.__backpackInjected) {
       });
     }
 
+    function processStyleRule(rule) {
+      const selectors = rule.selectorText.split(',').map(s => s.trim());
+      const inheritedSelectors = [':root', 'html', 'body', '*'];
+      const isInherited = selectors.some(sel => {
+        const base = getBaseSelector(sel).trim();
+        return inheritedSelectors.includes(base);
+      });
+      const matching = isInherited ? selectors : selectors.filter(sel => {
+        const base = getBaseSelector(sel);
+        if (!base) return false;
+        try { return selectorMatchesAny(base, elements); } catch { return false; }
+      });
+      if (matching.length > 0) {
+        matchedRules.push(`${matching.join(', ')} { ${rule.style.cssText} }`);
+        const text = rule.style.cssText;
+        for (const m of text.matchAll(/var\((--[\w-]+)/g)) cssVars.add(m[1]);
+      }
+    }
+
+    function processMediaRule(rule) {
+      const condText = rule.conditionText;
+      const isViewport = isViewportMediaQuery(condText);
+
+      if (isViewport) {
+        // Viewport media query: freeze to current state
+        const matches = window.matchMedia(condText).matches;
+        if (!matches) return; // Doesn't match now → discard entirely
+
+        // Matches now → unwrap inner rules (remove @media wrapper)
+        try {
+          for (const r of rule.cssRules) {
+            if (r.type === CSSRule.STYLE_RULE) processStyleRule(r);
+            else if (r.type === CSSRule.FONT_FACE_RULE) {
+              const ff = r.style.getPropertyValue('font-family').replace(/['"]/g, '').toLowerCase().trim();
+              if (ff && usedFontFamilies.has(ff)) fontFaceRules.push(r.cssText);
+            } else if (r.type === CSSRule.KEYFRAMES_RULE) {
+              keyframeRules.push(r.cssText);
+            }
+          }
+        } catch {}
+      } else {
+        // Non-viewport media query (prefers-color-scheme, print, etc.) → preserve as-is
+        const inner = [];
+        const inheritedSelectors = [':root', 'html', 'body', '*'];
+        try {
+          for (const r of rule.cssRules) {
+            if (r.type === CSSRule.STYLE_RULE) {
+              const sels = r.selectorText.split(',').map(s => s.trim());
+              const isInherited = sels.some(sel => {
+                const base = getBaseSelector(sel).trim();
+                return inheritedSelectors.includes(base);
+              });
+              const m = isInherited ? sels : sels.filter(sel => {
+                const base = getBaseSelector(sel);
+                return base && selectorMatchesAny(base, elements);
+              });
+              if (m.length > 0) inner.push(`${m.join(', ')} { ${r.style.cssText} }`);
+            }
+          }
+        } catch {}
+        if (inner.length > 0) matchedRules.push(`@media ${condText} {\n${inner.join('\n')}\n}`);
+      }
+    }
+
+    function processSupportsRule(rule) {
+      try {
+        if (CSS.supports(rule.conditionText)) {
+          // Supported → unwrap inner rules
+          processRules(rule.cssRules);
+        }
+        // Not supported → discard
+      } catch {
+        // Can't evaluate → preserve as-is
+        try { processRules(rule.cssRules); } catch {}
+      }
+    }
+
     function processRules(rules) {
       if (!rules) return;
       for (const rule of rules) {
-        // Track rule types
-        _dbgRuleTypes[rule.type] = (_dbgRuleTypes[rule.type] || 0) + 1;
-
         if (rule.type === CSSRule.STYLE_RULE) {
-          _dbgStyleRules++;
-          const selectors = rule.selectorText.split(',').map(s => s.trim());
-
-          // Always include :root, html, body, * rules — they provide inherited styles & variables
-          const inheritedSelectors = [':root', 'html', 'body', '*'];
-          const isInherited = selectors.some(sel => {
-            const base = getBaseSelector(sel).trim();
-            return inheritedSelectors.includes(base);
-          });
-
-          const matching = isInherited ? selectors : selectors.filter(sel => {
-            _dbgTestedSelectors++;
-            const base = getBaseSelector(sel);
-            if (!base) return false;
-            try {
-              const matched = selectorMatchesAny(base, elements);
-              if (matched) _dbgMatchedSelectors++;
-              if (_dbgSampleSelectors.length < 20 && _dbgStyleRules <= 30) {
-                _dbgSampleSelectors.push({ sel, base, matched });
-              }
-              return matched;
-            } catch (e) {
-              _dbgErrors++;
-              return false;
-            }
-          });
-          if (matching.length > 0) {
-            matchedRules.push(`${matching.join(', ')} { ${rule.style.cssText} }`);
-            const text = rule.style.cssText;
-            for (const m of text.matchAll(/var\((--[\w-]+)/g)) cssVars.add(m[1]);
-          }
+          processStyleRule(rule);
         } else if (rule.type === CSSRule.FONT_FACE_RULE) {
           const ff = rule.style.getPropertyValue('font-family').replace(/['"]/g, '').toLowerCase().trim();
-          if (!ff) continue; // Skip malformed @font-face without font-family
+          if (!ff) continue;
           if (usedFontFamilies.has(ff)) fontFaceRules.push(rule.cssText);
         } else if (rule.type === CSSRule.KEYFRAMES_RULE) {
           keyframeRules.push(rule.cssText);
         } else if (rule.type === CSSRule.MEDIA_RULE) {
-          const inner = [];
-          const inheritedSelectors = [':root', 'html', 'body', '*'];
-          try {
-            for (const r of rule.cssRules) {
-              if (r.type === CSSRule.STYLE_RULE) {
-                const sels = r.selectorText.split(',').map(s => s.trim());
-                const isInherited = sels.some(sel => {
-                  const base = getBaseSelector(sel).trim();
-                  return inheritedSelectors.includes(base);
-                });
-                const m = isInherited ? sels : sels.filter(sel => {
-                  const base = getBaseSelector(sel);
-                  return base && selectorMatchesAny(base, elements);
-                });
-                if (m.length > 0) inner.push(`${m.join(', ')} { ${r.style.cssText} }`);
-              }
-            }
-          } catch {}
-          if (inner.length > 0) matchedRules.push(`@media ${rule.conditionText} {\n${inner.join('\n')}\n}`);
+          processMediaRule(rule);
+        } else if (rule.type === CSSRule.SUPPORTS_RULE) {
+          processSupportsRule(rule);
         } else if (rule.cssRules) {
+          // @layer or other grouping rules → process inner rules
           try { processRules(rule.cssRules); } catch {}
         }
       }
     }
 
+    // Process all stylesheets, recovering CORS-blocked ones via fetch
     for (const sheet of document.styleSheets) {
       try {
         const rules = sheet.cssRules || sheet.rules;
         processRules(rules);
       } catch (e) {
         _dbgSheetErrors++;
+        // CORS-blocked sheet — try to fetch and parse
+        if (sheet.href) {
+          try {
+            const resp = await fetch(sheet.href);
+            if (resp.ok) {
+              const cssText = await resp.text();
+              const tempStyle = document.createElement('style');
+              tempStyle.textContent = cssText;
+              document.head.appendChild(tempStyle);
+              try {
+                processRules(tempStyle.sheet.cssRules);
+              } catch {}
+              tempStyle.remove();
+            }
+          } catch { /* Layer 1 (computed styles) has us covered */ }
+        }
       }
     }
-
-    console.log('%c[Backpack Extraction Debug]', 'color: #e17055; font-weight: bold', {
-      totalStyleRules: _dbgStyleRules,
-      testedSelectors: _dbgTestedSelectors,
-      matchedSelectors: _dbgMatchedSelectors,
-      errors: _dbgErrors,
-      sheetErrors: _dbgSheetErrors,
-      ruleTypes: _dbgRuleTypes,
-      matchedRuleCount: matchedRules.length,
-      sampleSelectors: _dbgSampleSelectors,
-      elementClasses: elements.slice(0, 5).map(e => e.className?.toString?.() || ''),
-    });
 
     // Resolve CSS variables
     const resolvedVars = [];
@@ -468,41 +644,7 @@ if (!window.__backpackInjected) {
       if (entries.length > 0) resolvedVars.push(`:root {\n${entries.join('\n')}\n}`);
     }
 
-    // Font imports — capture any stylesheet that likely provides fonts
-    const imports = [];
-    const seen = new Set();
-    const fontHints = ['fonts.googleapis.com', 'fonts.gstatic.com', 'use.typekit.net', 'fonts.bunny.net', 'rsms.me/inter', 'cdn.jsdelivr.net/fontsource'];
-
-    function isFontSheet(href) {
-      if (!href) return false;
-      const lower = href.toLowerCase();
-      return fontHints.some(hint => lower.includes(hint));
-    }
-
-    // Check stylesheets loaded in the document
-    for (const sheet of document.styleSheets) {
-      try {
-        if (sheet.href && isFontSheet(sheet.href) && !seen.has(sheet.href)) {
-          seen.add(sheet.href);
-          imports.push(`@import url("${sheet.href}");`);
-        }
-      } catch {}
-    }
-
-    // Check <link> tags (may not all appear as document.styleSheets)
-    document.querySelectorAll('link[rel="stylesheet"], link[rel="preload"][as="style"]').forEach(link => {
-      if (link.href && isFontSheet(link.href) && !seen.has(link.href)) {
-        seen.add(link.href);
-        imports.push(`@import url("${link.href}");`);
-      }
-    });
-
-    // Resolve @font-face src url() values to absolute URLs
-    for (let i = 0; i < fontFaceRules.length; i++) {
-      fontFaceRules[i] = resolveURLsInCSS(fontFaceRules[i]);
-    }
-
-    // Find which font families are NOT yet covered by @font-face or imports
+    // Font handling
     const systemFonts = new Set([
       'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui',
       'ui-serif', 'ui-sans-serif', 'ui-monospace', 'ui-rounded',
@@ -512,53 +654,73 @@ if (!window.__backpackInjected) {
       'lucida console', 'lucida sans unicode', 'palatino linotype',
     ]);
 
-    // Collect font families already covered by captured @font-face rules
+    // Resolve @font-face src url() to absolute URLs
+    for (let i = 0; i < fontFaceRules.length; i++) {
+      fontFaceRules[i] = resolveURLsInCSS(fontFaceRules[i]);
+    }
+
     const coveredFonts = new Set();
     for (const rule of fontFaceRules) {
       const match = rule.match(/font-family:\s*['"]?([^;'"]+)/i);
       if (match) coveredFonts.add(match[1].trim().toLowerCase());
     }
 
-    // Find uncovered custom fonts
     const uncoveredFonts = [...usedFontFamilies].filter(f =>
       !systemFonts.has(f) && !coveredFonts.has(f)
     );
 
-    // Generate Google Fonts fallback for any uncovered custom fonts
+    // Emit <link> tags for font CDN stylesheets instead of inlining their content.
+    // This avoids embedding megabytes of @font-face CSS (which itself references large font files).
+    const fontHints = ['fonts.googleapis.com', 'fonts.gstatic.com', 'use.typekit.net', 'fonts.bunny.net', 'rsms.me/inter', 'cdn.jsdelivr.net/fontsource'];
+    function isFontSheet(href) {
+      if (!href) return false;
+      const lower = href.toLowerCase();
+      return fontHints.some(hint => lower.includes(hint));
+    }
+
+    const fontLinkTags = [];
+    const seenFontSheets = new Set();
+
+    // For uncovered fonts, generate a Google Fonts <link> tag
     if (uncoveredFonts.length > 0) {
       const families = uncoveredFonts.map(f => {
         const name = f.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('+');
         return `family=${name}:wght@100;200;300;400;500;600;700;800;900`;
       }).join('&');
-      imports.push(`@import url("https://fonts.googleapis.com/css2?${families}&display=swap");`);
+      const gfUrl = `https://fonts.googleapis.com/css2?${families}&display=swap`;
+      fontLinkTags.push(`<link rel="stylesheet" href="${gfUrl}">`);
+      seenFontSheets.add(gfUrl);
     }
 
-    // Capture inherited font-family — if the root element uses a custom font
-    // but no matched rule sets font-family on it, inject a body rule so the
-    // font applies in the isolated preview
-    const rootFont = window.getComputedStyle(el).fontFamily;
-    const hasFontRule = matchedRules.some(r => {
-      if (!r.includes('font-family')) return false;
-      // Check if this rule targets the root element (not just descendants)
-      const selMatch = r.match(/^([^{]+)\{/);
-      if (!selMatch) return false;
-      return selMatch[1].split(',').some(s => {
-        const base = getBaseSelector(s.trim());
-        try { return base && el.matches && el.matches(base); } catch { return false; }
-      });
+    // Collect font stylesheet links from the page as <link> tags
+    for (const sheet of document.styleSheets) {
+      try {
+        if (sheet.href && isFontSheet(sheet.href) && !seenFontSheets.has(sheet.href)) {
+          seenFontSheets.add(sheet.href);
+          fontLinkTags.push(`<link rel="stylesheet" href="${sheet.href}">`);
+        }
+      } catch {}
+    }
+    document.querySelectorAll('link[rel="stylesheet"], link[rel="preload"][as="style"]').forEach(link => {
+      if (link.href && isFontSheet(link.href) && !seenFontSheets.has(link.href)) {
+        seenFontSheets.add(link.href);
+        fontLinkTags.push(`<link rel="stylesheet" href="${link.href}">`);
+      }
     });
-    const inheritedFontRule = (!hasFontRule && rootFont)
-      ? `body { font-family: ${rootFont}; }`
-      : '';
 
+    // Assemble CSS
     const parts = [];
-    if (imports.length) parts.push(imports.join('\n'));
     if (fontFaceRules.length) parts.push(fontFaceRules.join('\n'));
-    if (inheritedFontRule) parts.push(inheritedFontRule);
     if (resolvedVars.length) parts.push(resolvedVars.join('\n'));
     if (keyframeRules.length) parts.push(keyframeRules.join('\n'));
     if (matchedRules.length) parts.push(matchedRules.join('\n'));
-    return { css: parts.join('\n\n'), matchedRules };
+
+    let css = parts.join('\n\n');
+
+    // Font/image URLs are kept as absolute URLs (not base64-inlined) to stay under Firestore 1MB limit.
+    // The URLs are already resolved to absolute, so they'll load fine in the preview iframe.
+
+    return { css, matchedRules, fontLinkTags };
   }
 
   // Clean up broken CSS declarations (empty values from browser serialization)
@@ -686,213 +848,55 @@ if (!window.__backpackInjected) {
     return css;
   }
 
-  function buildCapturedHTML(el) {
-    const debug = { stage: 'buildCapturedHTML' };
-    const elements = collectElements(el);
+  async function buildCapturedHTML(el) {
+    // Phase 6: Wait for all fonts to be fully loaded before capturing
+    try { await document.fonts.ready; } catch {}
 
-    // ── Debug: element info ──
-    debug.element = {
-      tag: el.tagName.toLowerCase(),
-      classes: el.className?.toString?.() || '',
-      id: el.id || null,
-      rect: (() => { const r = el.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height) }; })(),
-      childCount: el.children.length,
-      totalDescendants: elements.length - 1,
-    };
-
-    // ── Debug: computed styles on root element ──
-    const cs = window.getComputedStyle(el);
-    debug.computedRoot = {
-      fontFamily: cs.fontFamily,
-      fontSize: cs.fontSize,
-      color: cs.color,
-      backgroundColor: cs.backgroundColor,
-      display: cs.display,
-      position: cs.position,
-      transition: cs.transition,
-      transitionProperty: cs.transitionProperty,
-      transitionDuration: cs.transitionDuration,
-      animation: cs.animationName !== 'none' ? `${cs.animationName} ${cs.animationDuration}` : 'none',
-      overflow: cs.overflow,
-    };
-
-    // ── Debug: all font families used across component ──
-    const fontFamilies = new Set();
-    for (const element of elements) {
-      const ff = window.getComputedStyle(element).fontFamily;
-      if (ff) ff.split(',').forEach(f => fontFamilies.add(f.trim().replace(/['"]/g, '')));
-    }
-    debug.fontFamilies = [...fontFamilies];
-
-    // ── Debug: all transitions across component elements (including pseudo-elements) ──
-    debug.transitions = [];
-    for (const element of elements) {
-      const ec = window.getComputedStyle(element);
-      if (ec.transitionProperty && ec.transitionProperty !== 'all' && ec.transitionDuration && !/^0s(,\s*0s)*$/.test(ec.transitionDuration)) {
-        debug.transitions.push({
-          tag: element.tagName.toLowerCase(),
-          class: element.className?.toString?.().split(' ')[0] || '',
-          property: ec.transitionProperty,
-          duration: ec.transitionDuration,
-          timing: ec.transitionTimingFunction,
-        });
-      }
-      // Check ::before and ::after
-      for (const pseudo of ['::before', '::after']) {
-        const pc = window.getComputedStyle(element, pseudo);
-        if (pc.content && pc.content !== 'none' && pc.content !== 'normal' &&
-            pc.transitionProperty && pc.transitionProperty !== 'all' &&
-            pc.transitionDuration && !/^0s(,\s*0s)*$/.test(pc.transitionDuration)) {
-          debug.transitions.push({
-            tag: element.tagName.toLowerCase() + pseudo,
-            class: element.className?.toString?.().split(' ')[0] || '',
-            property: pc.transitionProperty,
-            duration: pc.transitionDuration,
-            timing: pc.transitionTimingFunction,
-          });
-        }
-      }
-    }
-
-    // ── Debug: stylesheets on page ──
-    debug.stylesheets = [];
-    for (const sheet of document.styleSheets) {
-      try {
-        debug.stylesheets.push({
-          href: sheet.href || '(inline)',
-          rules: sheet.cssRules?.length || 0,
-          disabled: sheet.disabled,
-        });
-      } catch (e) {
-        debug.stylesheets.push({ href: sheet.href || '(inline)', error: 'CORS blocked' });
-      }
-    }
-
-    // ── Debug: font-related link tags on page ──
-    debug.fontLinks = [];
-    document.querySelectorAll('link[rel="stylesheet"], link[rel="preload"][as="style"]').forEach(link => {
-      if (link.href) debug.fontLinks.push(link.href);
-    });
-
-    // ── Run extraction ──
-    const extracted = extractMatchingCSS(el);
+    // ── Layer 2: Extract matching CSS (async — handles CORS recovery, font/image inlining) ──
+    const extracted = await extractMatchingCSS(el);
     let css = extracted.css;
-    const matchedRules = extracted.matchedRules;
-    const cleanHTML = getCleanHTML(el);
-
-    debug.rawCSS = {
-      length: css?.length || 0,
-      hasImports: css?.includes('@import') || false,
-      hasFontFace: css?.includes('@font-face') || false,
-      hasKeyframes: css?.includes('@keyframes') || false,
-      hasTransitionProperty: css?.includes('transition-property') || false,
-      hasTransitionShorthand: /transition\s*:/.test(css || ''),
-      hasVars: css?.includes('var(--') || false,
-      ruleCount: (css?.match(/\{/g) || []).length,
-      preview: css?.substring(0, 500) || '(empty)',
-    };
-
-    // Count component-specific matched rules (exclude inherited :root/html/body/* rules)
-    const inheritedPattern = /^(?:\*|:root|html|body)\s*\{/;
-    const componentRuleCount = matchedRules.filter(r => !inheritedPattern.test(r.trim())).length;
-
-    const needsFallback = componentRuleCount < 3;
-
-    if (needsFallback) {
-      debug.fallback = 'COMPUTED STYLE INLINING — CSS extraction found too few rules (' + componentRuleCount + ')';
-      console.log('%c[Backpack]', 'color: #e17055; font-weight: bold',
-        'CSS extraction insufficient (' + componentRuleCount + ' rules). Falling back to computed style inlining.');
-
-      // Clone the element again and inline computed styles
-      const styledClone = el.cloneNode(true);
-      styledClone.classList.remove('__backpack-highlight');
-      styledClone.removeAttribute('data-backpack-tag');
-      resolveRelativeURLs(styledClone);
-      inlineComputedStyles(styledClone, el);
-
-      // Still extract @imports and font links from any CSS we did get
-      const linkTags = [];
-      if (css) {
-        css.replace(/@import\s+url\(\s*["']?([^"')]+)["']?\s*\)\s*;?/g, (match, url) => {
-          linkTags.push(`<link rel="stylesheet" href="${url}">`);
-          return '';
-        });
-      }
-
-      // Also include the page's same-origin stylesheets as <link> tags
-      // so hover states, media queries, and animations still work
-      const pageOrigin = window.location.origin;
-      document.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
-        if (link.href && link.href.startsWith(pageOrigin) && !linkTags.some(t => t.includes(link.href))) {
-          linkTags.push(`<link rel="stylesheet" href="${link.href}">`);
-        }
-      });
-
-      // Extract font-related CSS (keyframes, font-face, body font, imports)
-      let fontCSS = '';
-      if (css) {
-        const fontParts = [];
-        // Keep body font rule
-        const bodyMatch = css.match(/body\s*\{[^}]*font-family[^}]*\}/);
-        if (bodyMatch) fontParts.push(bodyMatch[0]);
-        // Keep keyframes
-        css.replace(/@keyframes\s+[\w-]+\s*\{[^}]*(?:\{[^}]*\}[^}]*)*\}/g, m => { fontParts.push(m); return ''; });
-        if (fontParts.length) fontCSS = fontParts.join('\n');
-      }
-
-      debug.finalOutput = {
-        linkTags,
-        method: 'computed-style-inlining',
-        htmlLength: styledClone.outerHTML.length,
-      };
-
-      console.log('%c[Backpack Debug]', 'color: #6C5CE7; font-weight: bold', debug);
-
-      const parts = [];
-      if (linkTags.length) parts.push(linkTags.join('\n'));
-      if (fontCSS.trim()) parts.push(`<style>\n${fontCSS.trim()}\n</style>`);
-      parts.push(styledClone.outerHTML);
-      return parts.join('\n');
-    }
 
     css = resolveURLsInCSS(css);
-
-    // ── Debug: transition patching ──
-    const beforePatch = css;
     css = patchTransitions(css, el);
-    const patchDiff = css !== beforePatch;
-    debug.transitionPatch = {
-      applied: patchDiff,
-      addedChars: css.length - beforePatch.length,
-    };
-
     css = cleanCSS(css);
 
-    // Extract @import rules and convert to <link> tags for reliable loading
-    const linkTags = [];
-    css = css.replace(/@import\s+url\(\s*["']?([^"')]+)["']?\s*\)\s*;?/g, (match, url) => {
-      linkTags.push(`<link rel="stylesheet" href="${url}">`);
-      return ''; // Remove from CSS
-    });
+    // ── Layer 1: Clone and inline ALL computed styles (ALWAYS — the guaranteed baseline) ──
+    const styledClone = el.cloneNode(true);
+    styledClone.classList.remove('__backpack-highlight');
+    styledClone.removeAttribute('data-backpack-tag');
+    resolveRelativeURLs(styledClone);
+    inlineComputedStyles(styledClone, el);
 
-    debug.finalOutput = {
-      linkTags: linkTags,
-      method: 'css-extraction',
-      cssLength: css.trim().length,
-      htmlLength: cleanHTML.length,
-      hasTransitionProperty: css.includes('transition-property'),
-      hasTransitionShorthand: /transition\s*:/.test(css),
-      cssPreview: css.trim().substring(0, 500),
-    };
+    // ── Pseudo-element capture ──
+    const pseudoRules = capturePseudoElements(styledClone, el);
 
-    console.log('%c[Backpack Debug]', 'color: #6C5CE7; font-weight: bold', debug);
-    console.log('%c[Backpack CSS]', 'color: #00b894; font-weight: bold', css.trim());
+    // ── Inherited styles for the root ──
+    const inheritedRule = captureInheritedStyles(el);
 
+    // ── Assemble final HTML ──
+    // Layer 2 (extracted CSS) goes first in <style> — provides hover/focus/animation states.
+    // Layer 1 (inline computed styles on each element) acts as the guaranteed visual baseline.
+    // Inline styles beat regular CSS rules in specificity, so the computed snapshot wins
+    // for static appearance. Extracted CSS :hover/:focus rules still work for interactivity.
     const parts = [];
-    if (linkTags.length) parts.push(linkTags.join('\n'));
+
+    // Font CDN <link> tags go first so fonts start loading immediately
+    if (extracted.fontLinkTags && extracted.fontLinkTags.length) {
+      parts.push(extracted.fontLinkTags.join('\n'));
+    }
+
+    const styleBlocks = [];
+    if (inheritedRule) styleBlocks.push(inheritedRule);
     css = css.trim();
-    if (css) parts.push(`<style>\n${css}\n</style>`);
-    parts.push(cleanHTML);
+    if (css) styleBlocks.push(css);
+    if (pseudoRules.length) styleBlocks.push(pseudoRules.join('\n'));
+    if (styleBlocks.length) parts.push(`<style>\n${styleBlocks.join('\n\n')}\n</style>`);
+
+    parts.push(styledClone.outerHTML);
+
+    console.log('%c[Backpack]', 'color: #00b894; font-weight: bold',
+      `Captured: ${collectElements(el).length} elements, ${css.length} bytes CSS, ${pseudoRules.length} pseudo-elements`);
+
     return parts.join('\n');
   }
 
@@ -1083,11 +1087,14 @@ if (!window.__backpackInjected) {
     }
   }
 
-  function saveAndAnimate(selectedEl, selectedPackId) {
+  async function saveAndAnimate(selectedEl, selectedPackId) {
     closeDropdown();
 
-    // Build component data before removing highlight
-    const capturedHTML = buildCapturedHTML(selectedEl);
+    // Remove highlight BEFORE capturing so computed styles don't include picker CSS
+    selectedEl.classList.remove('__backpack-highlight');
+    selectedEl.removeAttribute('data-backpack-tag');
+
+    const capturedHTML = await buildCapturedHTML(selectedEl);
     const rawHTML = getCleanHTML(selectedEl);
     const background = findBackground(selectedEl.parentElement || selectedEl);
     const rect = selectedEl.getBoundingClientRect();
@@ -1102,16 +1109,13 @@ if (!window.__backpackInjected) {
       html: capturedHTML,
       rawHtml: rawHTML,
       styles: getComputedStylesJSON(selectedEl),
-      background: background,
+      background: typeof background === 'object' ? JSON.stringify(background) : background,
       sourceUrl: window.location.href,
       capturedWidth: Math.round(rect.width),
-      capturedHeight: Math.round(Math.max(rect.height, selectedEl.scrollHeight)),
+      capturedHeight: Math.round(rect.height),
+      capturedViewportWidth: window.innerWidth,
       savedAt: Date.now(),
     };
-
-    // Remove highlight before capturing screenshot
-    selectedEl.classList.remove('__backpack-highlight');
-    selectedEl.removeAttribute('data-backpack-tag');
 
     // Hide overlay so it doesn't appear in the screenshot
     if (overlay) overlay.style.display = 'none';
@@ -1193,8 +1197,8 @@ if (!window.__backpackInjected) {
       pointer-events: none;
       overflow: hidden;
       border-radius: 12px;
-      box-shadow: 0 8px 32px rgba(33, 215, 96, 0.3);
-      border: 2px solid #21d760;
+      box-shadow: 0 8px 32px rgba(255, 255, 255, 0.3);
+      border: 2px solid #ffffff;
       background-image: url(${imageUrl});
       background-size: cover;
       background-position: center;

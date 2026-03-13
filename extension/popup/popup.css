@@ -64,8 +64,8 @@ body {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(33, 215, 96, 0.12);
-  color: #21d760;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -81,7 +81,7 @@ body {
   justify-content: center;
   gap: 8px;
   padding: 11px 16px;
-  background: #21d760;
+  background: #ffffff;
   color: #000;
   border: none;
   border-radius: 10px;
@@ -93,7 +93,7 @@ body {
 }
 
 .btn-connect:hover {
-  background: #1aab4c;
+  background: #d9d9d9;
 }
 
 .btn-connect:active {
@@ -176,7 +176,7 @@ body {
   font-family: inherit;
   font-size: 11px;
   font-weight: 600;
-  color: #21d760;
+  color: #ffffff;
   background: none;
   border: none;
   cursor: pointer;
@@ -226,7 +226,7 @@ body {
 }
 
 .pack-item.active {
-  background: rgba(33, 215, 96, 0.08);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .pack-item-left {
@@ -249,8 +249,8 @@ body {
 }
 
 .pack-item.active .pack-icon {
-  background: rgba(33, 215, 96, 0.12);
-  color: #21d760;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
 }
 
 .pack-name {
@@ -263,12 +263,12 @@ body {
 }
 
 .pack-item.active .pack-name {
-  color: #21d760;
+  color: #ffffff;
   font-weight: 600;
 }
 
 .pack-check {
-  color: #21d760;
+  color: #ffffff;
   flex-shrink: 0;
   opacity: 0;
   transition: opacity 0.15s;
@@ -327,7 +327,7 @@ body {
 }
 
 .input:focus {
-  border-color: #21d760;
+  border-color: #ffffff;
 }
 
 .input::placeholder {
@@ -362,7 +362,7 @@ body {
   font-size: 12px;
   font-weight: 600;
   color: #000;
-  background: #21d760;
+  background: #ffffff;
   border: none;
   border-radius: 6px;
   padding: 5px 14px;
@@ -371,7 +371,7 @@ body {
 }
 
 .btn-create:hover {
-  background: #1aab4c;
+  background: #d9d9d9;
 }
 
 /* ── Pick Section ── */
@@ -386,7 +386,7 @@ body {
   justify-content: center;
   gap: 8px;
   padding: 11px;
-  background: #21d760;
+  background: #ffffff;
   color: #000;
   border: none;
   border-radius: 10px;
@@ -398,7 +398,7 @@ body {
 }
 
 .btn-pick:hover:not(:disabled) {
-  background: #1aab4c;
+  background: #d9d9d9;
 }
 
 .btn-pick:active:not(:disabled) {
