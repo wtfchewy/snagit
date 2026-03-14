@@ -299,10 +299,7 @@ function CanvasInner({ filterPack, filterSite }) {
       {filtered.length === 0 && whiteboardNodes.length === 0 && !loading && (
         <div className="fixed inset-0 flex items-center justify-center pointer-events-none">
           <div className="flex flex-col items-center text-center fade-in-up pointer-events-auto" style={{ width: 360 }}>
-            <div className="flex items-center gap-2.5 mb-2">
-              <img src="/logo.svg" alt="" className="w-10 h-10" />
-              <span className="text-3xl font-bold tracking-tight font-display text-copy">Backpack</span>
-            </div>
+            <img src="/logo.svg" alt="" className="h-15 drop-shadow-lg mb-4" />
             <p className="text-copy-lighter text-[13px] mb-8">
               {filterPack || filterSite
                 ? 'No components match this filter'
@@ -326,7 +323,7 @@ function CanvasInner({ filterPack, filterSite }) {
                       <ExternalLink size={11} className="text-primary-content opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                     <p className="text-[11px] text-primary-content mt-0.5 leading-relaxed">
-                      Add Backpack to Chrome from the Web Store
+                      Add Snagit to Chrome from the Web Store
                     </p>
                   </div>
                 </a>

@@ -1,5 +1,5 @@
-if (!window.__backpackInjected) {
-  window.__backpackInjected = true;
+if (!window.__snagitInjected) {
+  window.__snagitInjected = true;
 
   let isPickerActive = false;
   let currentTarget = null;
@@ -67,8 +67,8 @@ if (!window.__backpackInjected) {
 
   function getCleanHTML(el) {
     const clone = el.cloneNode(true);
-    clone.classList.remove('__backpack-highlight');
-    clone.removeAttribute('data-backpack-tag');
+    clone.classList.remove('__snagit-highlight');
+    clone.removeAttribute('data-snagit-tag');
     resolveRelativeURLs(clone);
     return clone.outerHTML;
   }
@@ -862,8 +862,8 @@ if (!window.__backpackInjected) {
 
     // ── Layer 1: Clone and inline ALL computed styles (ALWAYS — the guaranteed baseline) ──
     const styledClone = el.cloneNode(true);
-    styledClone.classList.remove('__backpack-highlight');
-    styledClone.removeAttribute('data-backpack-tag');
+    styledClone.classList.remove('__snagit-highlight');
+    styledClone.removeAttribute('data-snagit-tag');
     resolveRelativeURLs(styledClone);
     inlineComputedStyles(styledClone, el);
 
@@ -894,7 +894,7 @@ if (!window.__backpackInjected) {
 
     parts.push(styledClone.outerHTML);
 
-    console.log('%c[Backpack]', 'color: #00b894; font-weight: bold',
+    console.log('%c[Snagit]', 'color: #00b894; font-weight: bold',
       `Captured: ${collectElements(el).length} elements, ${css.length} bytes CSS, ${pseudoRules.length} pseudo-elements`);
 
     return parts.join('\n');
@@ -915,13 +915,13 @@ if (!window.__backpackInjected) {
 
   function highlightElement(el) {
     if (currentTarget) {
-      currentTarget.classList.remove('__backpack-highlight');
-      currentTarget.removeAttribute('data-backpack-tag');
+      currentTarget.classList.remove('__snagit-highlight');
+      currentTarget.removeAttribute('data-snagit-tag');
     }
     currentTarget = el;
     if (el) {
-      el.classList.add('__backpack-highlight');
-      el.setAttribute('data-backpack-tag', getTagLabel(el));
+      el.classList.add('__snagit-highlight');
+      el.setAttribute('data-snagit-tag', getTagLabel(el));
     }
   }
 
@@ -932,8 +932,8 @@ if (!window.__backpackInjected) {
     const target = e.target;
     if (
       target === overlay ||
-      target.classList.contains('__backpack-overlay') ||
-      target.classList.contains('__backpack-toast') ||
+      target.classList.contains('__snagit-overlay') ||
+      target.classList.contains('__snagit-toast') ||
       target === document.body ||
       target === document.documentElement
     ) return;
@@ -996,7 +996,7 @@ if (!window.__backpackInjected) {
 
     // Update overlay text
     if (overlay) {
-      overlay.innerHTML = `<div class="__backpack-overlay-title">Select a Pack</div><ol class="__backpack-overlay-steps"><li>Choose a pack from the list</li><li>Or create a new one</li></ol><div class="__backpack-overlay-esc">Press ESC to cancel</div>`;
+      overlay.innerHTML = `<div class="__snagit-overlay-title">Select a Pack</div><ol class="__snagit-overlay-steps"><li>Choose a pack from the list</li><li>Or create a new one</li></ol><div class="__snagit-overlay-esc">Press ESC to cancel</div>`;
     }
 
     // Fetch packs and show dropdown
@@ -1032,51 +1032,51 @@ if (!window.__backpackInjected) {
     }
 
     packDropdown = document.createElement('div');
-    packDropdown.className = '__backpack-dropdown';
+    packDropdown.className = '__snagit-dropdown';
     packDropdown.style.left = posLeft + 'px';
     packDropdown.style.top = posTop + 'px';
     packDropdown.style.width = dropdownWidth + 'px';
 
     // Header with toggle button
     const header = document.createElement('div');
-    header.className = '__backpack-dropdown-header';
-    header.innerHTML = `<span>Packs</span><button class="__backpack-dropdown-new-btn">+ New</button>`;
+    header.className = '__snagit-dropdown-header';
+    header.innerHTML = `<span>Packs</span><button class="__snagit-dropdown-new-btn">+ New</button>`;
     packDropdown.appendChild(header);
 
-    const toggleBtn = header.querySelector('.__backpack-dropdown-new-btn');
+    const toggleBtn = header.querySelector('.__snagit-dropdown-new-btn');
 
     // New pack form (hidden initially)
     const form = document.createElement('div');
-    form.className = '__backpack-dropdown-new-form';
+    form.className = '__snagit-dropdown-new-form';
     form.style.display = 'none';
-    form.innerHTML = `<input class="__backpack-dropdown-new-input" placeholder="Pack name..." /><button class="__backpack-dropdown-add-btn">Add</button>`;
+    form.innerHTML = `<input class="__snagit-dropdown-new-input" placeholder="Pack name..." /><button class="__snagit-dropdown-add-btn">Add</button>`;
     packDropdown.appendChild(form);
 
     function showForm() {
       form.style.display = 'flex';
       toggleBtn.textContent = '✕';
-      form.querySelector('.__backpack-dropdown-new-input').focus();
+      form.querySelector('.__snagit-dropdown-new-input').focus();
     }
 
     function hideForm() {
       form.style.display = 'none';
       toggleBtn.textContent = '+ New';
-      form.querySelector('.__backpack-dropdown-new-input').value = '';
+      form.querySelector('.__snagit-dropdown-new-input').value = '';
     }
 
     // List container for slider
     const list = document.createElement('div');
-    list.className = '__backpack-dropdown-list';
+    list.className = '__snagit-dropdown-list';
 
     // Slider element
     const slider = document.createElement('div');
-    slider.className = '__backpack-dropdown-slider';
+    slider.className = '__snagit-dropdown-slider';
     list.appendChild(slider);
 
     // Build items
     function addItem(label, packId) {
       const item = document.createElement('div');
-      item.className = '__backpack-dropdown-item';
+      item.className = '__snagit-dropdown-item';
       item.dataset.packId = packId;
       item.textContent = label;
       list.appendChild(item);
@@ -1102,7 +1102,7 @@ if (!window.__backpackInjected) {
     }
 
     // Show slider on first item by default
-    const items = list.querySelectorAll('.__backpack-dropdown-item');
+    const items = list.querySelectorAll('.__snagit-dropdown-item');
     requestAnimationFrame(() => moveSlider(items[0]));
 
     items.forEach((item) => {
@@ -1124,7 +1124,7 @@ if (!window.__backpackInjected) {
 
     // Create pack
     function handleCreatePack() {
-      const input = form.querySelector('.__backpack-dropdown-new-input');
+      const input = form.querySelector('.__snagit-dropdown-new-input');
       const name = input.value.trim();
       if (!name) return;
       const pack = { id: crypto.randomUUID(), name, description: '', createdAt: Date.now() };
@@ -1138,14 +1138,14 @@ if (!window.__backpackInjected) {
       });
     }
 
-    form.querySelector('.__backpack-dropdown-add-btn').addEventListener('click', (e) => {
+    form.querySelector('.__snagit-dropdown-add-btn').addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
       handleCreatePack();
     }, true);
 
-    form.querySelector('.__backpack-dropdown-new-input').addEventListener('keydown', (e) => {
+    form.querySelector('.__snagit-dropdown-new-input').addEventListener('keydown', (e) => {
       e.stopPropagation();
       e.stopImmediatePropagation();
       if (e.key === 'Enter') { e.preventDefault(); handleCreatePack(); }
@@ -1154,7 +1154,7 @@ if (!window.__backpackInjected) {
 
     // Handle pack selection (on list only, so header/form clicks aren't intercepted)
     list.addEventListener('click', (e) => {
-      const item = e.target.closest('.__backpack-dropdown-item');
+      const item = e.target.closest('.__snagit-dropdown-item');
       if (!item) return;
       e.preventDefault();
       e.stopPropagation();
@@ -1182,7 +1182,7 @@ if (!window.__backpackInjected) {
     document.addEventListener('mouseout', handleMouseOut, true);
     document.addEventListener('wheel', handleScroll, { capture: true, passive: false });
     if (overlay) {
-      overlay.innerHTML = `<div class="__backpack-overlay-title">Backpack Picker</div><ol class="__backpack-overlay-steps"><li>Hover over a component</li><li>Scroll to resize selection</li><li>Click to save</li></ol><div class="__backpack-overlay-esc">Press ESC to cancel</div>`;
+      overlay.innerHTML = `<div class="__snagit-overlay-title">Snagit Picker</div><ol class="__snagit-overlay-steps"><li>Hover over a component</li><li>Scroll to resize selection</li><li>Click to save</li></ol><div class="__snagit-overlay-esc">Press ESC to cancel</div>`;
     }
   }
 
@@ -1198,8 +1198,8 @@ if (!window.__backpackInjected) {
     closeDropdown();
 
     // Remove highlight BEFORE capturing so computed styles don't include picker CSS
-    selectedEl.classList.remove('__backpack-highlight');
-    selectedEl.removeAttribute('data-backpack-tag');
+    selectedEl.classList.remove('__snagit-highlight');
+    selectedEl.removeAttribute('data-snagit-tag');
 
     const capturedHTML = await buildCapturedHTML(selectedEl);
     const rawHTML = getCleanHTML(selectedEl);
@@ -1224,7 +1224,7 @@ if (!window.__backpackInjected) {
       savedAt: Date.now(),
     };
 
-    // Animate overlay card into backpack logo
+    // Animate overlay card into snagit logo
     if (overlay) {
       document.removeEventListener('mousemove', handleOverlayProximity, true);
       animateOverlayToLogo(overlay);
@@ -1263,9 +1263,9 @@ if (!window.__backpackInjected) {
 
         if (!dataUrl) {
           if (logoEl) {
-            logoEl.classList.add('__backpack-logo-pulse');
+            logoEl.classList.add('__snagit-logo-pulse');
             setTimeout(() => {
-              if (logoEl) logoEl.classList.remove('__backpack-logo-pulse');
+              if (logoEl) logoEl.classList.remove('__snagit-logo-pulse');
               hideLogo();
             }, 500);
           } else {
@@ -1360,9 +1360,9 @@ if (!window.__backpackInjected) {
       } else {
         screenshot.remove();
         if (logoEl) {
-          logoEl.classList.add('__backpack-logo-pulse');
+          logoEl.classList.add('__snagit-logo-pulse');
           setTimeout(() => {
-            if (logoEl) logoEl.classList.remove('__backpack-logo-pulse');
+            if (logoEl) logoEl.classList.remove('__snagit-logo-pulse');
             hideLogo();
           }, 500);
         } else {
@@ -1384,7 +1384,7 @@ if (!window.__backpackInjected) {
         document.addEventListener('mouseout', handleMouseOut, true);
         document.addEventListener('wheel', handleScroll, { capture: true, passive: false });
         if (overlay) {
-          overlay.innerHTML = `<div class="__backpack-overlay-title">Backpack Picker</div><ol class="__backpack-overlay-steps"><li>Hover over a component</li><li>Scroll to resize selection</li><li>Click to save</li></ol><div class="__backpack-overlay-esc">Press ESC to cancel</div>`;
+          overlay.innerHTML = `<div class="__snagit-overlay-title">Snagit Picker</div><ol class="__snagit-overlay-steps"><li>Hover over a component</li><li>Scroll to resize selection</li><li>Click to save</li></ol><div class="__snagit-overlay-esc">Press ESC to cancel</div>`;
         }
       } else if (isPickerActive) {
         deactivatePicker();
@@ -1399,7 +1399,7 @@ if (!window.__backpackInjected) {
   function showLogo() {
     if (logoEl) return;
     logoEl = document.createElement('div');
-    logoEl.className = '__backpack-logo';
+    logoEl.className = '__snagit-logo';
     logoEl.innerHTML = BACKPACK_LOGO_SVG;
     document.body.appendChild(logoEl);
   }
@@ -1489,8 +1489,8 @@ if (!window.__backpackInjected) {
     showLogo();
 
     overlay = document.createElement('div');
-    overlay.className = '__backpack-overlay';
-    overlay.innerHTML = `<div class="__backpack-overlay-title">Backpack Picker</div><ol class="__backpack-overlay-steps"><li>Hover over a component</li><li>Scroll to resize selection</li><li>Click to save</li></ol><div class="__backpack-overlay-esc">Press ESC to cancel</div>`;
+    overlay.className = '__snagit-overlay';
+    overlay.innerHTML = `<div class="__snagit-overlay-title">Snagit Picker</div><ol class="__snagit-overlay-steps"><li>Hover over a component</li><li>Scroll to resize selection</li><li>Click to save</li></ol><div class="__snagit-overlay-esc">Press ESC to cancel</div>`;
     document.body.appendChild(overlay);
 
     // Hide overlay when mouse is near it
@@ -1513,8 +1513,8 @@ if (!window.__backpackInjected) {
     hideLogo();
 
     if (currentTarget) {
-      currentTarget.classList.remove('__backpack-highlight');
-      currentTarget.removeAttribute('data-backpack-tag');
+      currentTarget.classList.remove('__snagit-highlight');
+      currentTarget.removeAttribute('data-snagit-tag');
       currentTarget = null;
     }
     if (overlay) {
@@ -1533,7 +1533,7 @@ if (!window.__backpackInjected) {
 
   function showToast(msg) {
     const toast = document.createElement('div');
-    toast.className = '__backpack-toast';
+    toast.className = '__snagit-toast';
     toast.textContent = msg;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 2500);

@@ -25,7 +25,7 @@ chrome.action.onClicked.addListener(async (tab) => {
 
 // External messages from the web app (via externally_connectable)
 chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
-  if (msg.type === 'BACKPACK_AUTH') {
+  if (msg.type === 'SNAGIT_AUTH') {
     chrome.storage.local.set(
       {
         user_token: msg.token,
@@ -42,7 +42,7 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
-  if (msg.type === 'BACKPACK_PING') {
+  if (msg.type === 'SNAGIT_PING') {
     sendResponse({ success: true });
     return false;
   }

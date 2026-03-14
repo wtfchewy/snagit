@@ -125,10 +125,7 @@ export default function Layout() {
 
       {/* Top-left: Logo */}
       <div className="fixed top-6 left-6 z-50 pointer-events-none">
-        <div className="flex items-center gap-2.5 bg-foreground/80 backdrop-blur-md px-4 py-2.5 rounded-xl border border-border shadow-lg shadow-black/20 pointer-events-auto">
-          <img src="/logo.svg" alt="" className="w-6 h-6" />
-          <span className="text-lg font-bold tracking-tight font-display text-copy">Backpack</span>
-        </div>
+        <img src="/logo.svg" alt="" className="h-10 drop-shadow-lg" />
       </div>
 
       {/* Top-right: User dropdown */}
@@ -295,7 +292,7 @@ export default function Layout() {
                           e.stopPropagation()
                           handleDeletePack(pack.id)
                         }}
-                        className="opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:!text-error p-0.5 bg-transparent border-none cursor-pointer transition-opacity text-copy-lighter shrink-0 ml-2"
+                        className="opacity-0 group-hover:opacity-60 hover:opacity-100! hover:text-error! p-0.5 bg-transparent border-none cursor-pointer transition-opacity text-copy-lighter shrink-0 ml-2"
                       >
                         <Trash2 size={11} />
                       </button>

@@ -1,16 +1,16 @@
-.__backpack-highlight {
-  outline: 2px solid #ffffff !important;
+.__snagit-highlight {
+  outline: 2px solid #ff3f70 !important;
   outline-offset: 2px !important;
   cursor: crosshair !important;
   position: relative;
 }
 
-.__backpack-highlight::after {
-  content: attr(data-backpack-tag);
+.__snagit-highlight::after {
+  content: attr(data-snagit-tag);
   position: absolute;
   top: -28px;
   left: 0;
-  background: #ffffff;
+  background: #ff3f70;
   color: #000;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 11px;
@@ -25,7 +25,7 @@
   box-shadow: 0 2px 8px rgba(255, 255, 255, 0.3);
 }
 
-.__backpack-overlay {
+.__snagit-overlay {
   position: fixed;
   top: 50%;
   right: 24px;
@@ -43,23 +43,23 @@
   width: 280px;
   line-height: 1.5;
   text-align: left;
-  animation: __backpack-fade-in 0.2s ease;
+  animation: __snagit-fade-in 0.2s ease;
   transition: opacity 0.2s ease, transform 0.2s ease;
   pointer-events: none;
 }
 
-.__backpack-overlay.--hidden {
+.__snagit-overlay.--hidden {
   opacity: 0;
   transform: translateY(-50%) translateX(8px);
 }
 
-.__backpack-overlay-title {
+.__snagit-overlay-title {
   font-size: 13px;
   font-weight: 700;
   margin-bottom: 8px;
 }
 
-.__backpack-overlay-steps {
+.__snagit-overlay-steps {
   color: #a6a6a6;
   font-size: 11px;
   line-height: 1.6;
@@ -68,14 +68,14 @@
   list-style: none;
 }
 
-.__backpack-overlay-steps li {
+.__snagit-overlay-steps li {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 2px 0;
 }
 
-.__backpack-overlay-steps li::before {
+.__snagit-overlay-steps li::before {
   content: counter(step);
   counter-increment: step;
   font-size: 9px;
@@ -91,17 +91,17 @@
   flex-shrink: 0;
 }
 
-.__backpack-overlay-steps {
+.__snagit-overlay-steps {
   counter-reset: step;
 }
 
-.__backpack-overlay-esc {
+.__snagit-overlay-esc {
   margin-top: 8px;
   font-size: 10px;
   color: #666;
 }
 
-.__backpack-toast {
+.__snagit-toast {
   position: fixed;
   bottom: 24px;
   right: 24px;
@@ -113,18 +113,18 @@
   font-weight: 500;
   padding: 12px 20px;
   border-radius: 10px;
-  border-left: 3px solid #ffffff;
+  border-left: 3px solid #ff3f70;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  animation: __backpack-fade-in 0.2s ease;
+  animation: __snagit-fade-in 0.2s ease;
 }
 
-@keyframes __backpack-fade-in {
+@keyframes __snagit-fade-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 /* Pack dropdown */
-.__backpack-dropdown {
+.__snagit-dropdown {
   position: fixed;
   z-index: 2147483647;
   background: #1a1a1a;
@@ -135,46 +135,46 @@
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   max-height: 320px;
   overflow-y: auto;
-  animation: __backpack-fade-in 0.15s ease;
+  animation: __snagit-fade-in 0.15s ease;
   cursor: default !important;
 }
 
-.__backpack-dropdown *  {
+.__snagit-dropdown *  {
   cursor: default !important;
 }
 
-.__backpack-dropdown button,
-.__backpack-dropdown-item {
+.__snagit-dropdown button,
+.__snagit-dropdown-item {
   cursor: pointer !important;
 }
 
-.__backpack-dropdown input {
+.__snagit-dropdown input {
   cursor: text !important;
 }
 
-.__backpack-dropdown::-webkit-scrollbar {
+.__snagit-dropdown::-webkit-scrollbar {
   width: 4px;
 }
 
-.__backpack-dropdown::-webkit-scrollbar-thumb {
+.__snagit-dropdown::-webkit-scrollbar-thumb {
   background: #444;
   border-radius: 4px;
 }
 
-.__backpack-dropdown-header {
+.__snagit-dropdown-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 8px 10px 6px;
 }
 
-.__backpack-dropdown-header span {
+.__snagit-dropdown-header span {
   font-size: 10px;
   font-weight: 600;
   color: #a6a6a6;
 }
 
-.__backpack-dropdown-new-btn {
+.__snagit-dropdown-new-btn {
   display: flex;
   align-items: center;
   gap: 3px;
@@ -188,17 +188,17 @@
   transition: color 0.15s;
 }
 
-.__backpack-dropdown-new-btn:hover {
+.__snagit-dropdown-new-btn:hover {
   color: #fbfbfb;
 }
 
-.__backpack-dropdown-new-form {
+.__snagit-dropdown-new-form {
   display: flex;
   gap: 6px;
   padding: 0 6px 6px;
 }
 
-.__backpack-dropdown-new-input {
+.__snagit-dropdown-new-input {
   flex: 1;
   min-width: 0;
   padding: 6px 10px;
@@ -211,35 +211,35 @@
   outline: none;
 }
 
-.__backpack-dropdown-new-input:focus {
+.__snagit-dropdown-new-input:focus {
   border-color: #a6a6a6;
 }
 
-.__backpack-dropdown-new-input::placeholder {
+.__snagit-dropdown-new-input::placeholder {
   color: #666;
 }
 
-.__backpack-dropdown-add-btn {
+.__snagit-dropdown-add-btn {
   padding: 6px 12px;
   border-radius: 8px;
   font-size: 11px;
   font-weight: 600;
   font-family: inherit;
-  background: #ffffff;
+  background: #ff3f70;
   color: #000;
   border: none;
   white-space: nowrap;
 }
 
-.__backpack-dropdown-add-btn:hover {
+.__snagit-dropdown-add-btn:hover {
   background: #d9d9d9;
 }
 
-.__backpack-dropdown-list {
+.__snagit-dropdown-list {
   position: relative;
 }
 
-.__backpack-dropdown-slider {
+.__snagit-dropdown-slider {
   position: absolute;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.1);
@@ -250,7 +250,7 @@
   opacity: 0;
 }
 
-.__backpack-dropdown-item {
+.__snagit-dropdown-item {
   position: relative;
   padding: 10px 14px;
   font-size: 13px;
@@ -262,8 +262,8 @@
   text-overflow: ellipsis;
 }
 
-/* Backpack logo — bottom right, visible during picker */
-.__backpack-logo {
+/* Snagit logo — bottom right, visible during picker */
+.__snagit-logo {
   position: fixed;
   bottom: 24px;
   right: 24px;
@@ -277,22 +277,22 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  animation: __backpack-fade-in 0.2s ease;
+  animation: __snagit-fade-in 0.2s ease;
   pointer-events: none;
 }
 
-.__backpack-logo svg {
+.__snagit-logo svg {
   width: 30px;
   height: 30px;
 }
 
-.__backpack-logo-pulse {
-  animation: __backpack-pulse 0.6s ease forwards !important;
-  border-color: #ffffff !important;
+.__snagit-logo-pulse {
+  animation: __snagit-pulse 0.6s ease forwards !important;
+  border-color: #ff3f70 !important;
   box-shadow: 0 4px 24px rgba(255, 255, 255, 0.5) !important;
 }
 
-@keyframes __backpack-pulse {
+@keyframes __snagit-pulse {
   0% { transform: scale(1); }
   30% { transform: scale(1.3); }
   100% { transform: scale(0); }

@@ -8,11 +8,8 @@ export default function Login() {
     <div className="min-h-screen bg-background flex items-center justify-center relative">
       <div className="dot-grid absolute inset-0 pointer-events-none" />
 
-      <div className="w-full max-w-xs relative z-10">
-        <div className="flex items-center justify-center gap-3 no-underline text-white mb-4">
-          <img src='/logo.svg' alt="" className="w-12 h-12 mb-1 fill-white" />
-          <span className="text-4xl font-bold tracking-tight font-display">Backpack</span>
-        </div>
+      <div className="w-full max-w-xs relative z-10 flex flex-col items-center">
+        <img src="/logo.svg" alt="" className="h-15 drop-shadow-lg mb-4" />
 
         <p className="text-center text-copy-light text-sm mb-6">Sign in below (this is completely free 😉)</p>
 

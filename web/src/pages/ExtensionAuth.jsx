@@ -36,7 +36,7 @@ export default function ExtensionAuth() {
       const token = await user.getIdToken()
 
       const ok = await sendToExtension({
-        type: 'BACKPACK_AUTH',
+        type: 'SNAGIT_AUTH',
         token,
         refreshToken: user.refreshToken,
         userId: user.uid,
@@ -88,7 +88,7 @@ export default function ExtensionAuth() {
           </div>
           <h1 className="text-xl font-bold text-copy mb-1.5">Connect Extension</h1>
           <p className="text-[13px] text-copy-lighter mb-5">
-            Sign in to connect the Backpack extension
+            Sign in to connect the Snagit extension
           </p>
           <button
             onClick={loginWithGoogle}
@@ -118,7 +118,7 @@ export default function ExtensionAuth() {
           </div>
           <h1 className="text-xl font-bold text-copy mb-1.5">Connection Failed</h1>
           <p className="text-[13px] text-copy-lighter mb-4">
-            Make sure the Backpack extension is installed and enabled.
+            Make sure the Snagit extension is installed and enabled.
           </p>
           <button
             onClick={retry}

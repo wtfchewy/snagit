@@ -50,7 +50,7 @@ async function refreshToken(auth) {
 
     return newToken;
   } catch (e) {
-    console.error('[Backpack] Token refresh failed:', e);
+    console.error('[Snagit] Token refresh failed:', e);
     return null;
   }
 }
@@ -121,7 +121,7 @@ function fromFirestoreDoc(doc) {
 async function firestoreRequest(method, path, body = null) {
   const auth = await getAuth();
   if (!auth) {
-    console.warn('[Backpack] No auth credentials for Firestore');
+    console.warn('[Snagit] No auth credentials for Firestore');
     return null;
   }
 
@@ -153,12 +153,12 @@ async function firestoreRequest(method, path, body = null) {
 
     if (!res.ok) {
       const err = await res.text();
-      console.error(`[Backpack] Firestore ${method} ${path} failed:`, res.status, err);
+      console.error(`[Snagit] Firestore ${method} ${path} failed:`, res.status, err);
       return null;
     }
     return await res.json();
   } catch (e) {
-    console.error(`[Backpack] Firestore request error:`, e);
+    console.error(`[Snagit] Firestore request error:`, e);
     return null;
   }
 }
