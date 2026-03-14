@@ -27,26 +27,78 @@
 
 .__backpack-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 50%;
+  right: 24px;
+  transform: translateY(-50%);
   z-index: 2147483646;
   background: #1a1a1a;
   color: #fbfbfb;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  text-align: center;
-  padding: 10px 16px;
-  letter-spacing: 0.2px;
-  border-bottom: 2px solid #ffffff;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 1px solid #333;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  width: 280px;
+  line-height: 1.5;
+  text-align: left;
+  animation: __backpack-fade-in 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
 }
 
-.__backpack-overlay span {
-  opacity: 0.5;
-  font-weight: 400;
-  margin-left: 8px;
+.__backpack-overlay.--hidden {
+  opacity: 0;
+  transform: translateY(-50%) translateX(8px);
+}
+
+.__backpack-overlay-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.__backpack-overlay-steps {
+  color: #a6a6a6;
+  font-size: 11px;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.__backpack-overlay-steps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.__backpack-overlay-steps li::before {
+  content: counter(step);
+  counter-increment: step;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fbfbfb;
+  background: rgba(255, 255, 255, 0.12);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.__backpack-overlay-steps {
+  counter-reset: step;
+}
+
+.__backpack-overlay-esc {
+  margin-top: 8px;
+  font-size: 10px;
+  color: #666;
 }
 
 .__backpack-toast {
@@ -120,8 +172,6 @@
   font-size: 10px;
   font-weight: 600;
   color: #a6a6a6;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
 }
 
 .__backpack-dropdown-new-btn {

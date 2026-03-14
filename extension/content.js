@@ -996,7 +996,7 @@ if (!window.__backpackInjected) {
 
     // Update overlay text
     if (overlay) {
-      overlay.innerHTML = 'Select a pack for this component<span>Press ESC to cancel</span>';
+      overlay.innerHTML = `<div class="__backpack-overlay-title">Select a Pack</div><ol class="__backpack-overlay-steps"><li>Choose a pack from the list</li><li>Or create a new one</li></ol><div class="__backpack-overlay-esc">Press ESC to cancel</div>`;
     }
 
     // Fetch packs and show dropdown
@@ -1182,7 +1182,7 @@ if (!window.__backpackInjected) {
     document.addEventListener('mouseout', handleMouseOut, true);
     document.addEventListener('wheel', handleScroll, { capture: true, passive: false });
     if (overlay) {
-      overlay.innerHTML = 'Backpack Picker Active — scroll to resize selection, click to save<span>Press ESC to cancel</span>';
+      overlay.innerHTML = `<div class="__backpack-overlay-title">Backpack Picker</div><ol class="__backpack-overlay-steps"><li>Hover over a component</li><li>Scroll to resize selection</li><li>Click to save</li></ol><div class="__backpack-overlay-esc">Press ESC to cancel</div>`;
     }
   }
 
@@ -1224,8 +1224,12 @@ if (!window.__backpackInjected) {
       savedAt: Date.now(),
     };
 
-    // Hide overlay so it doesn't appear in the screenshot
-    if (overlay) overlay.style.display = 'none';
+    // Animate overlay card into backpack logo
+    if (overlay) {
+      document.removeEventListener('mousemove', handleOverlayProximity, true);
+      animateOverlayToLogo(overlay);
+      overlay = null;
+    }
 
     // Deactivate picker (but keep logo until animation finishes)
     isPickerActive = false;
@@ -1337,11 +1341,11 @@ if (!window.__backpackInjected) {
       const arcHeight = Math.min(300, Math.abs(targetY - startY) * 0.6 + 100);
       const arcOffset = -Math.sin(t * Math.PI) * arcHeight;
 
-      // Scale down and fade
-      const scale = 1 - t * 0.85;
+      // Scale down to 0 and fade
+      const scale = 1 - t;
       const w = rect.width * scale;
       const h = rect.height * scale;
-      const opacity = 1 - t * 0.6;
+      const opacity = 1 - t * t;
 
       screenshot.style.left = (x - w / 2) + 'px';
       screenshot.style.top = (y + arcOffset - h / 2) + 'px';
@@ -1380,7 +1384,7 @@ if (!window.__backpackInjected) {
         document.addEventListener('mouseout', handleMouseOut, true);
         document.addEventListener('wheel', handleScroll, { capture: true, passive: false });
         if (overlay) {
-          overlay.innerHTML = 'Backpack Picker Active — scroll to resize selection, click to save<span>Press ESC to cancel</span>';
+          overlay.innerHTML = `<div class="__backpack-overlay-title">Backpack Picker</div><ol class="__backpack-overlay-steps"><li>Hover over a component</li><li>Scroll to resize selection</li><li>Click to save</li></ol><div class="__backpack-overlay-esc">Press ESC to cancel</div>`;
         }
       } else if (isPickerActive) {
         deactivatePicker();
@@ -1407,6 +1411,75 @@ if (!window.__backpackInjected) {
     }
   }
 
+  function animateOverlayToLogo(el) {
+    const rect = el.getBoundingClientRect();
+    const logoRect = logoEl ? logoEl.getBoundingClientRect() : { left: window.innerWidth - 56, top: window.innerHeight - 56, width: 52, height: 52 };
+    const targetX = logoRect.left + logoRect.width / 2;
+    const targetY = logoRect.top + logoRect.height / 2;
+    const startX = rect.left + rect.width / 2;
+    const startY = rect.top + rect.height / 2;
+
+    // Switch to fixed positioning for animation
+    el.style.position = 'fixed';
+    el.style.left = rect.left + 'px';
+    el.style.top = rect.top + 'px';
+    el.style.right = 'auto';
+    el.style.transform = 'none';
+    el.style.transition = 'none';
+    el.classList.remove('--hidden');
+
+    const duration = 600;
+    const startTime = performance.now();
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function frame(now) {
+      const rawT = Math.min((now - startTime) / duration, 1);
+      const t = easeInOutCubic(rawT);
+
+      const x = startX + (targetX - startX) * t;
+      const y = startY + (targetY - startY) * t;
+
+      const arcHeight = Math.min(200, Math.abs(targetY - startY) * 0.4 + 80);
+      const arcOffset = -Math.sin(t * Math.PI) * arcHeight;
+
+      const scale = 1 - t;
+      const w = rect.width * scale;
+      const h = rect.height * scale;
+
+      el.style.left = (x - w / 2) + 'px';
+      el.style.top = (y + arcOffset - h / 2) + 'px';
+      el.style.width = w + 'px';
+      el.style.height = h + 'px';
+      el.style.opacity = 1 - t * t;
+      el.style.borderRadius = (14 + t * 30) + 'px';
+      el.style.transform = `rotate(${t * -6}deg)`;
+      el.style.overflow = 'hidden';
+
+      if (rawT < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        el.remove();
+      }
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  function handleOverlayProximity(e) {
+    if (!overlay) return;
+    const rect = overlay.getBoundingClientRect();
+    const pad = 60;
+    const near =
+      e.clientX >= rect.left - pad &&
+      e.clientX <= rect.right + pad &&
+      e.clientY >= rect.top - pad &&
+      e.clientY <= rect.bottom + pad;
+    overlay.classList.toggle('--hidden', near);
+  }
+
   function activatePicker() {
     isPickerActive = true;
     isShowingDropdown = false;
@@ -1417,8 +1490,11 @@ if (!window.__backpackInjected) {
 
     overlay = document.createElement('div');
     overlay.className = '__backpack-overlay';
-    overlay.innerHTML = 'Backpack Picker Active — scroll to resize selection, click to save<span>Press ESC to cancel</span>';
+    overlay.innerHTML = `<div class="__backpack-overlay-title">Backpack Picker</div><ol class="__backpack-overlay-steps"><li>Hover over a component</li><li>Scroll to resize selection</li><li>Click to save</li></ol><div class="__backpack-overlay-esc">Press ESC to cancel</div>`;
     document.body.appendChild(overlay);
+
+    // Hide overlay when mouse is near it
+    document.addEventListener('mousemove', handleOverlayProximity, true);
 
     document.addEventListener('mouseover', handleMouseOver, true);
     document.addEventListener('mouseout', handleMouseOut, true);
@@ -1452,6 +1528,7 @@ if (!window.__backpackInjected) {
     document.removeEventListener('click', handleClick, true);
     document.removeEventListener('keydown', handleKeyDown, true);
     document.removeEventListener('click', handleDropdownOutsideClick, true);
+    document.removeEventListener('mousemove', handleOverlayProximity, true);
   }
 
   function showToast(msg) {
