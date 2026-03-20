@@ -299,7 +299,7 @@ function CanvasInner({ filterPack, filterSite }) {
       {filtered.length === 0 && whiteboardNodes.length === 0 && !loading && (
         <div className="fixed inset-0 flex items-center justify-center pointer-events-none">
           <div className="flex flex-col items-center text-center fade-in-up pointer-events-auto" style={{ width: 360 }}>
-            <img src="/logo.svg" alt="" className="h-15 drop-shadow-lg mb-4" />
+            <img src="/dark.svg" alt="" className="h-15 drop-shadow-lg mb-4" />
             <p className="text-copy-lighter text-[13px] mb-8">
               {filterPack || filterSite
                 ? 'No components match this filter'

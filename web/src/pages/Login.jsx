@@ -9,7 +9,7 @@ export default function Login() {
       <div className="dot-grid absolute inset-0 pointer-events-none" />
 
       <div className="w-full max-w-xs relative z-10 flex flex-col items-center">
-        <img src="/logo.svg" alt="" className="h-15 drop-shadow-lg mb-4" />
+        <img src="/dark.svg" alt="" className="h-15 drop-shadow-lg mb-4" />
 
         <p className="text-center text-copy-light text-sm mb-6">Sign in below (this is completely free 😉)</p>
 

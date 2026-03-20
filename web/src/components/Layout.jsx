@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { LogOut, Filter, X, ChevronDown, Package, Globe, Plus, Trash2 } from 'lucide-react'
+import { LogOut, Filter, X, ChevronDown, Plus, Trash2, Search, ArrowRight, Check } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { getPacks, getAllComponents, createPack, deletePack } from '../store'
 import Canvas from '../pages/Canvas'
@@ -15,12 +15,11 @@ export default function Layout() {
   const [creatingPack, setCreatingPack] = useState(false)
   const [newPackName, setNewPackName] = useState('')
   const dropdownRef = useRef(null)
-  const filterRef = useRef(null)
+  const filterPanelRef = useRef(null)
+  const filterInputRef = useRef(null)
   const newPackInputRef = useRef(null)
-  const packListRef = useRef(null)
-  const siteListRef = useRef(null)
-  const [sliderStyle, setSliderStyle] = useState({ opacity: 0 })
-  const [siteSliderStyle, setSiteSliderStyle] = useState({ opacity: 0 })
+  const [filterQuery, setFilterQuery] = useState('')
+  const [selectedIndex, setSelectedIndex] = useState(0)
 
   useEffect(() => {
     if (!user) return
@@ -49,49 +48,49 @@ export default function Layout() {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false)
       }
-      if (filterRef.current && !filterRef.current.contains(event.target)) {
-        setShowFilter(false)
-        setCreatingPack(false)
-        setNewPackName('')
-      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const calcSlider = useCallback((el, containerRef) => {
-    if (!el || !containerRef.current) return null
-    const container = containerRef.current.getBoundingClientRect()
-    const rect = el.getBoundingClientRect()
-    return {
-      top: rect.top - container.top,
-      left: rect.left - container.left,
-      width: rect.width,
-      height: rect.height,
-      opacity: 1,
+  // Filter popup: close on click outside, Escape, and Cmd+F toggle
+  useEffect(() => {
+    if (!showFilter) return
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setShowFilter(false)
+        setCreatingPack(false)
+        setNewPackName('')
+      }
     }
-  }, [])
 
-  const updateSlider = useCallback((el) => {
-    setSliderStyle(calcSlider(el, packListRef) || ((s) => ({ ...s, opacity: 0 })))
-  }, [calcSlider])
+    const handleClickOutside = (e) => {
+      if (filterPanelRef.current && !filterPanelRef.current.contains(e.target)) {
+        setShowFilter(false)
+        setCreatingPack(false)
+        setNewPackName('')
+      }
+    }
 
-  const updateSiteSlider = useCallback((el) => {
-    setSiteSliderStyle(calcSlider(el, siteListRef) || ((s) => ({ ...s, opacity: 0 })))
-  }, [calcSlider])
+    document.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showFilter])
 
-  // Update slider positions when filters change
+  // Reset state when filter popup opens
   useEffect(() => {
-    if (!packListRef.current) return
-    const active = packListRef.current.querySelector('[data-pack-active="true"]')
-    updateSlider(active)
-  }, [filterPack, packs, showFilter, updateSlider])
-
-  useEffect(() => {
-    if (!siteListRef.current) return
-    const active = siteListRef.current.querySelector('[data-site-active="true"]')
-    updateSiteSlider(active)
-  }, [filterSite, sites, showFilter, updateSiteSlider])
+    if (showFilter) {
+      setFilterQuery('')
+      setSelectedIndex(0)
+      setCreatingPack(false)
+      setNewPackName('')
+      setTimeout(() => filterInputRef.current?.focus(), 0)
+    }
+  }, [showFilter])
 
   const handleCreatePack = async () => {
     const name = newPackName.trim()
@@ -119,37 +118,80 @@ export default function Layout() {
   const hasActiveFilter = filterPack || filterSite
   const activePackName = packs.find((p) => p.id === filterPack)?.name
 
+  // Build filtered items for the popup
+  const filteredPacks = packs.filter((p) =>
+    !filterQuery.trim() || p.name.toLowerCase().includes(filterQuery.toLowerCase())
+  )
+  const filteredSites = sites.filter((s) =>
+    !filterQuery.trim() || s.toLowerCase().includes(filterQuery.toLowerCase())
+  )
+
+  const totalItems = filteredPacks.length + filteredSites.length
+
+  // Reset selection when results change
+  useEffect(() => {
+    setSelectedIndex(0)
+  }, [totalItems])
+
+  const handleFilterSelect = (type, value) => {
+    if (type === 'pack') {
+      setFilterPack(value === filterPack ? null : value)
+    } else {
+      setFilterSite(value === filterSite ? null : value)
+    }
+    setShowFilter(false)
+  }
+
+  const handleFilterInputKeyDown = (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setSelectedIndex((i) => Math.min(i + 1, totalItems - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setSelectedIndex((i) => Math.max(i - 1, 0))
+    } else if (e.key === 'Enter' && totalItems > 0) {
+      e.preventDefault()
+      if (selectedIndex < filteredPacks.length) {
+        handleFilterSelect('pack', filteredPacks[selectedIndex].id)
+      } else {
+        handleFilterSelect('site', filteredSites[selectedIndex - filteredPacks.length])
+      }
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Canvas filterPack={filterPack} filterSite={filterSite} />
 
       {/* Top-left: Logo */}
-      <div className="fixed top-6 left-6 z-50 pointer-events-none">
-        <img src="/logo.svg" alt="" className="h-10 drop-shadow-lg" />
+      <div className="fixed top-6 left-6 z-50">
+        <img src="/dark.svg" alt="" className="h-10 drop-shadow-lg cursor-pointer hover:drop-shadow-2xl hover:-rotate-5 hover:scale-105 transition-all duration-300" />
       </div>
 
       {/* Top-right: User dropdown */}
       <div className="fixed top-6 right-6 z-50 pointer-events-none" ref={dropdownRef}>
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer border border-border bg-foreground/80 backdrop-blur-md p-2 pr-3 rounded-xl shadow-lg shadow-black/20 pointer-events-auto"
+          className="flex items-center hover:opacity-80 transition-opacity cursor-pointer border border-border bg-foreground/80 backdrop-blur-md rounded-xl shadow-lg shadow-black/20 pointer-events-auto"
         >
           {user?.photoURL ? (
             <img
               src={user.photoURL}
               alt=""
-              className="w-7 h-7 rounded-lg"
+              className="w-9 h-9 rounded-lg"
               referrerPolicy="no-referrer"
             />
           ) : (
-            <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
               {user?.displayName?.[0] || '?'}
             </div>
           )}
-          <ChevronDown
-            size={14}
-            className={`text-copy-lighter transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
-          />
+          <div className='px-3'>
+            <ChevronDown
+              size={16}
+              className={`text-copy-lighter transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+            />
+          </div>
         </button>
 
         {isDropdownOpen && (
@@ -192,11 +234,11 @@ export default function Layout() {
         )}
       </div>
 
-      {/* Bottom-right: Filter */}
-      <div className="fixed bottom-6 right-6 z-50 pointer-events-none" ref={filterRef}>
+      {/* Bottom-right: Filter trigger */}
+      <div className="fixed bottom-6 right-6 z-50">
         <button
           onClick={() => setShowFilter(!showFilter)}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border transition-all shadow-lg shadow-black/20 backdrop-blur-md pointer-events-auto ${hasActiveFilter
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border transition-all shadow-lg shadow-black/20 backdrop-blur-md ${hasActiveFilter
             ? 'bg-primary/90 text-primary-content border-primary/50'
             : 'bg-foreground/80 text-copy-light border-border hover:text-copy'
             }`}
@@ -218,136 +260,146 @@ export default function Layout() {
             </button>
           )}
         </button>
+      </div>
 
-        {showFilter && (
-          <div className="absolute bottom-full right-0 mb-2 w-60 bg-foreground border border-border rounded-xl shadow-2xl shadow-black/40 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150 pointer-events-auto">
-            {/* Packs */}
-            <div className="px-2 pt-3 pb-2">
-              <div className="flex items-center justify-between px-2 mb-2">
-                <p className="text-[10px] font-semibold text-copy-lighter">Packs</p>
+      {/* Filter popup overlay */}
+      {showFilter && (
+        <div className="bg-black/50 w-full h-screen flex items-start justify-center pt-[20vh] z-9999 fixed inset-0">
+          <div ref={filterPanelRef} className="bg-foreground border border-border w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden">
+            {/* Search input */}
+            <div className="relative border-b border-border">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-copy-lighter" />
+              <input
+                ref={filterInputRef}
+                type="text"
+                value={filterQuery}
+                onChange={(e) => setFilterQuery(e.target.value)}
+                onKeyDown={handleFilterInputKeyDown}
+                placeholder="Search packs and sites..."
+                className="w-full h-11 bg-transparent px-2 pl-10 pr-14 text-sm text-copy placeholder:text-copy-lighter focus:outline-none"
+              />
+              {hasActiveFilter && (
                 <button
-                  onClick={() => { setCreatingPack(!creatingPack); setNewPackName('') }}
-                  className="flex items-center gap-1 text-[10px] font-semibold text-copy-lighter hover:text-copy cursor-pointer bg-transparent border-none transition-colors"
+                  onClick={() => { setFilterPack(null); setFilterSite(null) }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-medium text-copy-lighter hover:text-copy bg-transparent border-none cursor-pointer"
                 >
-                  {creatingPack ? <X size={10} /> : <><Plus size={10} /> New</>}
+                  Clear all
                 </button>
-              </div>
-
-              {creatingPack && (
-                <div className="flex gap-1.5 mb-1.5 px-0.5">
-                  <input
-                    ref={newPackInputRef}
-                    type="text"
-                    value={newPackName}
-                    onChange={(e) => setNewPackName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleCreatePack()
-                      if (e.key === 'Escape') { setCreatingPack(false); setNewPackName('') }
-                    }}
-                    placeholder="Pack name..."
-                    className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg text-[12px] bg-background border border-border text-copy outline-none focus:border-copy-lighter"
-                  />
-                  <button
-                    onClick={handleCreatePack}
-                    className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-primary text-primary-content border-none cursor-pointer hover:bg-primary-dark"
-                  >
-                    Add
-                  </button>
-                </div>
               )}
-
-              <div className="relative" ref={packListRef}>
-                <div
-                  className="absolute rounded-lg bg-primary/10 pointer-events-none transition-all duration-200 ease-out"
-                  style={sliderStyle}
-                />
-                <div className="relative">
-                  <button
-                    data-pack-active={!filterPack}
-                    onClick={() => setFilterPack(null)}
-                    onMouseEnter={(e) => updateSlider(e.currentTarget)}
-                    onMouseLeave={() => {
-                      const active = packListRef.current?.querySelector('[data-pack-active="true"]')
-                      updateSlider(active)
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-[12px] cursor-pointer border-none bg-transparent transition-colors ${!filterPack ? 'text-primary font-semibold' : 'text-copy-light'}`}
-                  >
-                    All Packs
-                  </button>
-                  {packs.map((pack) => (
-                    <div
-                      key={pack.id}
-                      data-pack-active={filterPack === pack.id}
-                      onClick={() => setFilterPack(pack.id === filterPack ? null : pack.id)}
-                      onMouseEnter={(e) => updateSlider(e.currentTarget)}
-                      onMouseLeave={() => {
-                        const active = packListRef.current?.querySelector('[data-pack-active="true"]')
-                        updateSlider(active)
-                      }}
-                      className={`group w-full flex items-center justify-between px-3 py-2 rounded-lg text-[12px] cursor-pointer transition-colors ${filterPack === pack.id ? 'text-primary font-semibold' : 'text-copy-light'}`}
-                    >
-                      <span className="truncate">{pack.name}</span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDeletePack(pack.id)
-                        }}
-                        className="opacity-0 group-hover:opacity-60 hover:opacity-100! hover:text-error! p-0.5 bg-transparent border-none cursor-pointer transition-opacity text-copy-lighter shrink-0 ml-2"
-                      >
-                        <Trash2 size={11} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
 
-            {sites.length > 0 && (
-              <>
-                <div className="border-t border-border px-2" />
-                <div className="px-2 pt-2 pb-3">
-                  <p className="text-[10px] font-semibold text-copy-lighter px-2 mb-2">Websites</p>
-                  <div className="relative max-h-44 overflow-auto" ref={siteListRef}>
-                    <div
-                      className="absolute rounded-lg bg-primary/10 pointer-events-none transition-all duration-200 ease-out"
-                      style={siteSliderStyle}
-                    />
-                    <div className="relative">
-                      <button
-                        data-site-active={!filterSite}
-                        onClick={() => setFilterSite(null)}
-                        onMouseEnter={(e) => updateSiteSlider(e.currentTarget)}
-                        onMouseLeave={() => {
-                          const active = siteListRef.current?.querySelector('[data-site-active="true"]')
-                          updateSiteSlider(active)
-                        }}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-[12px] cursor-pointer border-none bg-transparent transition-colors ${!filterSite ? 'text-primary font-semibold' : 'text-copy-light'}`}
-                      >
-                        All Sites
-                      </button>
-                      {sites.map((site) => (
+            {/* Results */}
+            <div className="max-h-[500px] overflow-y-auto">
+              {totalItems > 0 || creatingPack ? (
+                <div className="p-2">
+                  {/* Packs section */}
+                  {(filteredPacks.length > 0 || creatingPack) && (
+                    <>
+                      <div className="flex items-center justify-between px-4 pt-3 pb-1.5">
+                        <span className="text-[13px] font-semibold text-copy-lighter">Packs</span>
                         <button
-                          key={site}
-                          data-site-active={filterSite === site}
-                          onClick={() => setFilterSite(site === filterSite ? null : site)}
-                          onMouseEnter={(e) => updateSiteSlider(e.currentTarget)}
-                          onMouseLeave={() => {
-                            const active = siteListRef.current?.querySelector('[data-site-active="true"]')
-                            updateSiteSlider(active)
-                          }}
-                          className={`w-full text-left px-3 py-2 rounded-lg text-[12px] cursor-pointer border-none bg-transparent transition-colors truncate ${filterSite === site ? 'text-primary font-semibold' : 'text-copy-light'}`}
+                          onClick={() => { setCreatingPack(!creatingPack); setNewPackName('') }}
+                          className="flex items-center gap-1 text-[11px] font-medium text-copy-lighter hover:text-copy cursor-pointer bg-transparent border-none transition-colors"
                         >
-                          {site}
+                          {creatingPack ? <X size={10} /> : <><Plus size={10} /> New</>}
                         </button>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
+
+                      {creatingPack && (
+                        <div className="flex gap-1.5 mb-1 mx-1">
+                          <input
+                            ref={newPackInputRef}
+                            type="text"
+                            value={newPackName}
+                            onChange={(e) => setNewPackName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleCreatePack()
+                              if (e.key === 'Escape') { setCreatingPack(false); setNewPackName('') }
+                            }}
+                            placeholder="Pack name..."
+                            className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg text-[12px] bg-background border border-border text-copy outline-none focus:border-copy-lighter"
+                          />
+                          <button
+                            onClick={handleCreatePack}
+                            className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-primary text-primary-content border-none cursor-pointer hover:bg-primary-dark"
+                          >
+                            Add
+                          </button>
+                        </div>
+                      )}
+
+                      {filteredPacks.map((pack, idx) => {
+                        const isActive = filterPack === pack.id
+                        const isSelected = idx === selectedIndex
+                        return (
+                          <button
+                            key={pack.id}
+                            onClick={() => handleFilterSelect('pack', pack.id)}
+                            onMouseEnter={() => setSelectedIndex(idx)}
+                            className={`group rounded-xl w-full flex items-center gap-3 px-3 py-2 text-[15px] text-left cursor-pointer ${isSelected ? 'bg-primary text-primary-content' : isActive ? 'bg-primary text-primary-content' : 'text-copy hover:bg-border'}`}
+                          >
+                            <span className={`truncate font-medium ${isSelected || isActive ? 'text-primary-content' : 'text-copy-light'}`}>{pack.name}</span>
+                            <div className="ml-auto flex items-center gap-2">
+                              {isActive && (
+                                <Check size={16} className={isSelected || isActive ? 'text-primary-content' : 'text-primary'} />
+                              )}
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded-md ${isSelected ? 'bg-primary-content/20' : ''}`}>{isSelected ? (isActive ? 'Remove' : 'Apply') : ''}</span>
+                              <ArrowRight size={18} className={`rounded-md p-0.5 shrink-0 ${isSelected || isActive ? 'bg-primary-content text-primary' : 'bg-copy-light text-foreground'}`} />
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeletePack(pack.id)
+                              }}
+                              className={`opacity-0 group-hover:opacity-60 hover:opacity-100! p-1 bg-transparent border-none cursor-pointer shrink-0 ${isSelected || isActive ? 'text-primary-content hover:text-primary-content!' : 'text-copy-lighter hover:text-error!'}`}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </button>
+                        )
+                      })}
+                    </>
+                  )}
+
+                  {/* Sites section */}
+                  {filteredSites.length > 0 && (
+                    <>
+                      {filteredPacks.length > 0 && <div className="mx-3 my-1.5 border-t border-border" />}
+                      <div className="px-4 pt-3 pb-1.5 text-[13px] font-semibold text-copy-lighter">Websites</div>
+                      {filteredSites.map((site, idx) => {
+                        const globalIdx = filteredPacks.length + idx
+                        const isActive = filterSite === site
+                        const isSelected = globalIdx === selectedIndex
+                        return (
+                          <button
+                            key={site}
+                            onClick={() => handleFilterSelect('site', site)}
+                            onMouseEnter={() => setSelectedIndex(globalIdx)}
+                            className={`rounded-xl w-full flex items-center gap-3 px-3 py-2 text-[15px] text-left cursor-pointer ${isSelected ? 'bg-primary text-primary-content' : isActive ? 'bg-primary text-primary-content' : 'text-copy hover:bg-border'}`}
+                          >
+                            <span className={`truncate font-medium ${isSelected || isActive ? 'text-primary-content' : 'text-copy-light'}`}>{site}</span>
+                            <div className="ml-auto flex items-center gap-2">
+                              {isActive && (
+                                <Check size={16} className={isSelected || isActive ? 'text-primary-content' : 'text-primary'} />
+                              )}
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded-md ${isSelected ? 'bg-primary-content/20' : ''}`}>{isSelected ? (isActive ? 'Remove' : 'Apply') : ''}</span>
+                              <ArrowRight size={18} className={`rounded-md p-0.5 shrink-0 ${isSelected || isActive ? 'bg-primary-content text-primary' : 'bg-copy-light text-foreground'}`} />
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </>
+                  )}
                 </div>
-              </>
-            )}
+              ) : (
+                <div className="py-8 text-center text-sm text-copy-lighter">
+                  {filterQuery ? 'No results found' : 'No packs or sites yet'}
+                </div>
+              )}
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

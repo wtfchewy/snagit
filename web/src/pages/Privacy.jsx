@@ -14,7 +14,7 @@ export default function Privacy() {
           Back
         </Link>
 
-        <img src="/logo.svg" alt="" className="h-15 drop-shadow-lg mb-4" />
+        <img src="/dark.svg" alt="" className="h-15 drop-shadow-lg mb-4" />
 
         <h1 className="text-2xl font-bold text-copy mb-2 font-display">Privacy Policy</h1>
         <p className="text-[12px] text-copy-lighter mb-8">Last updated: March 9, 2026</p>

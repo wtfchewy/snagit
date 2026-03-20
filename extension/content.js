@@ -996,7 +996,7 @@ if (!window.__snagitInjected) {
 
     // Update overlay text
     if (overlay) {
-      overlay.innerHTML = `<div class="__snagit-overlay-title">Select a Pack</div><ol class="__snagit-overlay-steps"><li>Choose a pack from the list</li><li>Or create a new one</li></ol><div class="__snagit-overlay-esc">Press ESC to cancel</div>`;
+      overlay.innerHTML = `<div class="__snagit-overlay-title"><img src="${chrome.runtime.getURL('icons/logo.svg')}" alt="Snagit" style="height: 20px; display: block;"></div><ol class="__snagit-overlay-steps"><li>Choose a pack from the list</li><li>Or create a new one</li></ol><div class="__snagit-overlay-esc">Press ESC to cancel</div>`;
     }
 
     // Fetch packs and show dropdown
@@ -1182,7 +1182,7 @@ if (!window.__snagitInjected) {
     document.addEventListener('mouseout', handleMouseOut, true);
     document.addEventListener('wheel', handleScroll, { capture: true, passive: false });
     if (overlay) {
-      overlay.innerHTML = `<div class="__snagit-overlay-title">Snagit Picker</div><ol class="__snagit-overlay-steps"><li>Hover over a component</li><li>Scroll to resize selection</li><li>Click to save</li></ol><div class="__snagit-overlay-esc">Press ESC to cancel</div>`;
+      overlay.innerHTML = `<div class="__snagit-overlay-title"><img src="${chrome.runtime.getURL('icons/logo.svg')}" alt="Snagit" style="height: 20px; display: block;"></div><ol class="__snagit-overlay-steps"><li>Hover over a component</li><li>Scroll to resize selection</li><li>Click to save</li></ol><div class="__snagit-overlay-esc">Press ESC to cancel</div>`;
     }
   }
 
@@ -1384,7 +1384,7 @@ if (!window.__snagitInjected) {
         document.addEventListener('mouseout', handleMouseOut, true);
         document.addEventListener('wheel', handleScroll, { capture: true, passive: false });
         if (overlay) {
-          overlay.innerHTML = `<div class="__snagit-overlay-title">Snagit Picker</div><ol class="__snagit-overlay-steps"><li>Hover over a component</li><li>Scroll to resize selection</li><li>Click to save</li></ol><div class="__snagit-overlay-esc">Press ESC to cancel</div>`;
+          overlay.innerHTML = `<div class="__snagit-overlay-title"><img src="${chrome.runtime.getURL('icons/logo.svg')}" alt="Snagit" style="height: 20px; display: block;"></div><ol class="__snagit-overlay-steps"><li>Hover over a component</li><li>Scroll to resize selection</li><li>Click to save</li></ol><div class="__snagit-overlay-esc">Press ESC to cancel</div>`;
         }
       } else if (isPickerActive) {
         deactivatePicker();
@@ -1394,7 +1394,7 @@ if (!window.__snagitInjected) {
 
   let logoEl = null;
 
-  const BACKPACK_LOGO_SVG = `<svg viewBox="0 0 190.73 190.72" xmlns="http://www.w3.org/2000/svg" width="32" height="32"><defs><style>.bp-1{fill-rule:evenodd;fill:#ffffff}.bp-2{fill:#ffffff}</style></defs><g><path class="bp-1" d="M161.88,162.13c-4.21,12.41-13.95,22.15-26.36,26.36-6.6,2.24-14.51,2.24-26.92,2.24h-26.48c-12.4,0-20.32,0-26.92-2.24-12.4-4.21-22.15-13.95-26.36-26.36-.78-2.31-1.29-4.77-1.62-7.53-.49-4.12-.74-6.18.3-8.45,1.04-2.27,2.93-3.54,6.71-6.09,17.59-11.83,36.24-20.3,61.13-20.3,21.7,0,46.56,8.64,62.73,20.85,2.81,2.12,4.21,3.18,5.14,5.31.93,2.13.75,3.93.39,7.53-.32,3.24-.86,6.07-1.75,8.69Z"/><path class="bp-1" d="M95.14,0h.45c3.94,0,7.23,0,9.94.18,2.81.19,5.47.61,8.05,1.67,5.98,2.48,10.73,7.22,13.2,13.2,1.07,2.58,1.48,5.23,1.67,8.05.18,2.7.18,5.99.18,9.94h0v2.14c21.16,11.72,35.48,34.28,35.48,60.18v25.63c0,3.07,0,4.6-.92,5.11-.92.5-2.25-.35-4.91-2.06-17.24-11.07-39.2-17.6-62.92-17.6s-45.67,6.52-62.92,17.6c-2.66,1.71-3.99,2.56-4.91,2.06-.92-.5-.92-2.04-.92-5.11h0v-25.63c0-25.9,14.32-48.46,35.48-60.18v-2.14c0-3.94,0-7.23.18-9.94.19-2.81.61-5.47,1.67-8.05,2.48-5.98,7.22-10.73,13.2-13.2,2.58-1.07,5.23-1.48,8.05-1.67C87.9,0,91.2,0,95.14,0h0ZM115.17,24.01c.1,1.48.14,3.25.15,5.54-6.32-1.91-13.01-2.94-19.95-2.94s-13.64,1.03-19.95,2.94c.01-2.29.05-4.06.15-5.54.15-2.14.41-3.18.69-3.86,1.13-2.72,3.28-4.88,6-6,.68-.28,1.72-.54,3.86-.69,2.2-.15,5.03-.15,9.26-.15s7.06,0,9.26.15c2.14.15,3.17.41,3.86.69,2.72,1.13,4.88,3.28,6,6,.28.68.55,1.72.69,3.86ZM86.49,70.97c-3.67,0-6.65,2.98-6.65,6.65s2.98,6.65,6.65,6.65h17.74c3.67,0,6.65-2.98,6.65-6.65s-2.98-6.65-6.65-6.65h-17.74Z"/><path class="bp-2" d="M15.52,136.66v-27.53c0-2.9,0-4.34-1.07-4.81-1.07-.46-2.05.46-4.01,2.31-6.43,6.07-10.45,14.67-10.45,24.2v11.41c0,8.65,5.02,16.12,12.3,19.67,2.09,1.02,3.13,1.52,4,.89s.65-1.99.23-4.69c-1.02-6.46-1.01-13.58-1.01-21.44Z"/><path class="bp-2" d="M175.2,136.66c0,7.86.01,14.98-1.01,21.44-.42,2.7-.64,4.05.23,4.69.86.64,1.91.13,4-.89,7.28-3.55,12.3-11.02,12.3-19.67v-11.41c0-9.54-4.01-18.14-10.44-24.2-1.96-1.85-2.94-2.77-4.01-2.31s-1.07,1.91-1.07,4.81v27.53Z"/></g></svg>`;
+  const BACKPACK_LOGO_SVG = `<svg viewBox="0 0 256.39 256.38" xmlns="http://www.w3.org/2000/svg" width="32" height="32"><defs><style>.si-1{fill:#ffffff}.si-2{fill:#ef4371}</style></defs><g><path class="si-2" d="M105.32,245.38c-13.34,0-21.17-11.25-26.5-21.06-5.86-10.78-11.78-25.91-19.97-46.85l-27.86-71.2c-8.71-22.26-15-38.35-18.03-51.22-5.08-21.62,1.08-30.87,6.15-35.95,5.38-5.38,12.53-8.11,21.24-8.11,14.85,0,34.07,7.52,65.92,19.99l71.19,27.86c21.25,8.31,36.6,14.32,47.41,20.28,5.83,3.21,21.31,11.75,20.48,27.4-.84,15.66-17.23,22.51-23.41,25.1-11.46,4.79-27.47,9.16-49.64,15.2-10.52,2.87-16.32,4.45-18.68,6.81-2.36,2.36-3.94,8.15-6.81,18.67-6.05,22.18-10.42,38.2-15.21,49.66-2.58,6.17-9.44,22.57-25.09,23.41-.4.02-.8.03-1.2.03Z"/><path class="si-1" d="M40.35,22c12.77,0,32.21,7.61,61.92,19.23l71.19,27.86c41.06,16.07,61.59,24.1,60.91,36.84-.68,12.74-22.11,18.59-64.96,30.27-12.76,3.48-19.14,5.22-23.56,9.64-4.42,4.42-6.16,10.8-9.64,23.56-11.69,42.85-17.53,64.28-30.27,64.96-.2.01-.41.02-.61.02-12.39,0-20.43-20.53-36.23-60.93l-27.86-71.19C24.41,59.28,16,37.78,26.89,26.89c3.37-3.37,7.75-4.89,13.46-4.89M40.35,0h0c-11.73,0-21.5,3.81-29.02,11.33C-4.82,27.48.5,50.13,2.25,57.57c3.2,13.64,9.62,30.03,18.49,52.71l27.86,71.19c8.34,21.31,14.37,36.71,20.56,48.1,3.6,6.63,14.57,26.81,36.17,26.81.59,0,1.19-.02,1.78-.05,22.56-1.21,31.67-22.99,34.66-30.15,5.07-12.12,9.51-28.42,15.67-50.99,1.52-5.56,3.08-11.28,4.11-13.66,2.38-1.03,8.1-2.59,13.66-4.11,22.57-6.16,38.88-10.6,50.99-15.67,7.16-2.99,28.94-12.1,30.15-34.66,1.2-22.54-19.39-33.89-26.15-37.62-11.44-6.3-27.07-12.42-48.71-20.89l-71.19-27.86C77.22,7.81,57.27,0,40.35,0h0Z"/></g></svg>`;
 
   function showLogo() {
     if (logoEl) return;
@@ -1490,7 +1490,7 @@ if (!window.__snagitInjected) {
 
     overlay = document.createElement('div');
     overlay.className = '__snagit-overlay';
-    overlay.innerHTML = `<div class="__snagit-overlay-title">Snagit Picker</div><ol class="__snagit-overlay-steps"><li>Hover over a component</li><li>Scroll to resize selection</li><li>Click to save</li></ol><div class="__snagit-overlay-esc">Press ESC to cancel</div>`;
+    overlay.innerHTML = `<div class="__snagit-overlay-title"><img src="${chrome.runtime.getURL('icons/logo.svg')}" alt="Snagit" style="height: 20px; display: block;"></div><ol class="__snagit-overlay-steps"><li>Hover over a component</li><li>Scroll to resize selection</li><li>Click to save</li></ol><div class="__snagit-overlay-esc">Press ESC to cancel</div>`;
     document.body.appendChild(overlay);
 
     // Hide overlay when mouse is near it
