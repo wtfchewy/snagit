@@ -130,7 +130,7 @@
   background: #1a1a1a;
   border: 1px solid #333;
   border-radius: 12px;
-  padding: 6px;
+  padding: 4px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   max-height: 320px;
@@ -165,7 +165,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px 6px;
+  padding: 6px 8px 4px;
 }
 
 .__snagit-dropdown-header span {
@@ -252,8 +252,8 @@
 
 .__snagit-dropdown-item {
   position: relative;
-  padding: 10px 14px;
-  font-size: 13px;
+  padding: 6px 10px;
+  font-size: 12px;
   font-weight: 500;
   color: #fbfbfb;
   border-radius: 8px;
